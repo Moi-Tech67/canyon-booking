@@ -13,7 +13,7 @@ CORS(app)
 
 import os
 DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
-app.secret_key = os.environ.get('SECRET_KEY', 'a_default_dev_key')
+app.secret_key = os.environ.get('SECRET_KEY', 'my_super_super_super_long_secret_key_2025!')
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
