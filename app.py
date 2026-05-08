@@ -3,6 +3,7 @@ from datetime import datetime
 import sqlite3
 import qrcode
 import io
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_cors import CORS
