@@ -18,7 +18,8 @@
         .status-cancelled { color: #A12B2B; font-weight: bold; }
         .cancel-btn { background: #A12B2B; color: white; border: none; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.7rem; border-radius: 3px; }
         .cancel-btn:hover { background: #8B0000; }
-        .message { padding: 1rem; margin: 1rem 0; display: none; font-size: 0.9rem; }
+        .qr-cell img { width: 80px; height: 80px; }
+        .message { padding: 1rem; margin: 1rem 0; display: none; }
         .message.success { background: #E6F0E6; color: #2B5E2B; display: block; }
         .message.error { background: #F4E6E6; color: #A12B2B; display: block; }
     </style>
@@ -40,7 +41,8 @@
     {% if bookings %}
     <table>
         <tr>
-            <th>ID</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Time</th><th>Guests</th><th>Price</th><th>Status</th><th>Action</th>
+            <th>ID</th><th>Room</th><th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th><th>Price</th><th>Status</th>
+            <th>Time‑In</th><th>Time‑Out</th><th>QR Code</th><th>Action</th>
         </tr>
         {% for b in bookings %}
         <tr id="row-{{ b.id }}">
@@ -52,6 +54,15 @@
             <td>{{ b.guests }}</td>
             <td>${{ b.total_price }}</td>
             <td class="{{ 'status-cancelled' if b.status=='cancelled' }}">{{ b.status }}</td>
+            <td>{{ b.time_in or '-' }}</td>
+            <td>{{ b.time_out or '-' }}</td>
+            <td class="qr-cell">
+                {% if b.status == 'active' %}
+                    <img src="{{ url_for('booking_qr', booking_id=b.id) }}" alt="QR Code">
+                {% else %}
+                    -
+                {% endif %}
+            </td>
             <td>
                 {% if b.status == 'active' %}
                 <button class="cancel-btn" onclick="cancelBooking({{ b.id }})">Cancel</button>
@@ -66,27 +77,23 @@
 
     <script>
         async function cancelBooking(bookingId) {
-            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            if (!confirm('Are you sure?')) return;
             const res = await fetch('/api/cancel_booking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ booking_id: bookingId })
             });
             const data = await res.json();
-            const msgDiv = document.getElementById('message');
+            const msg = document.getElementById('message');
             if (data.success) {
-                msgDiv.className = 'message success';
-                msgDiv.textContent = 'Booking cancelled.';
-                // Update the row style
-                const row = document.getElementById('row-' + bookingId);
-                if (row) {
-                    row.querySelector('td:nth-child(8)').textContent = 'cancelled';
-                    row.querySelector('td:nth-child(8)').classList.add('status-cancelled');
-                    row.querySelector('td:nth-child(9)').innerHTML = '';  // remove button
-                }
+                msg.className = 'message success';
+                msg.textContent = 'Cancelled.';
+                document.getElementById('row-' + bookingId).querySelector('td:nth-child(8)').textContent = 'cancelled';
+                document.getElementById('row-' + bookingId).querySelector('td:nth-child(8)').classList.add('status-cancelled');
+                document.getElementById('row-' + bookingId).querySelector('td:nth-child(12)').innerHTML = '';
             } else {
-                msgDiv.className = 'message error';
-                msgDiv.textContent = 'Error: ' + data.message;
+                msg.className = 'message error';
+                msg.textContent = data.message;
             }
         }
     </script>

@@ -39,6 +39,7 @@
             <li><a href="/accommodation">Rooms</a></li>
             <li><a href="/booking">Book</a></li>
             <li><a href="/contact">Contact</a></li>
+            <li><a href="/scanner">QR Scanner</a></li>
         </ul>
     </nav>
 
@@ -53,15 +54,15 @@
     </div>
 
     <table>
-        <thead>
-            <tr>
-                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
-                <th>Check-in</th><th>Check-out</th><th>Time</th><th>Guests</th>
-                <th>Price</th><th>Status</th><th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="bookingTable"></tbody>
-    </table>
+    <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
+            <th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th>
+            <th>Price</th><th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="bookingTable"></tbody>
+</table>
 
     <div id="editModal">
         <form id="editForm">
@@ -109,14 +110,16 @@
             bookings.forEach(b => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
-                    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
-                    <td>${b.time}</td><td>${b.guests}</td><td>$${b.total_price}</td>
-                    <td>${b.status}</td>
-                    <td class="actions">
-                        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
-                        <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
-                    </td>`;
+    <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
+    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
+    <td>${b.time}</td><td>${b.guests}</td><td>$${b.total_price}</td>
+    <td>${b.status}</td>
+    <td>${b.time_in || '-'}</td>
+    <td>${b.time_out || '-'}</td>
+    <td class="actions">
+        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
+        <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
+    </td>`;
                 tbody.appendChild(tr);
             });
         }

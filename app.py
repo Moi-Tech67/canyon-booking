@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
 from datetime import datetime
 import sqlite3
+import qrcode
+import io
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_cors import CORS
@@ -9,7 +11,9 @@ app = Flask(__name__)
 app.secret_key = 'the_canyon_secret_key_2024'
 CORS(app)
 
-DB_FILE = 'canyon_bookings.db'
+import os
+DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
+app.secret_key = os.environ.get('SECRET_KEY', 'a_default_dev_key')
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
@@ -58,7 +62,7 @@ def init_db():
         role TEXT NOT NULL CHECK(role IN ('admin','customer'))
     )''')
 
-    # Bookings table (add user_id foreign key)
+    # Bookings table (now includes time_in and time_out)
     c.execute('''CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -74,6 +78,8 @@ def init_db():
         total_price REAL NOT NULL,
         booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status TEXT DEFAULT 'active',
+        time_in TEXT,
+        time_out TEXT,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
@@ -120,6 +126,14 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def customer_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session or session.get('role') != 'customer':
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
 # ---------- Routes (Public) ----------
 @app.route('/')
 def index():
@@ -137,6 +151,7 @@ def about():
 def contact():
     return render_template('contact.html', user=session)
 
+# Authentication routes (same as before)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -193,7 +208,7 @@ def register():
             return render_template('register.html')
     return render_template('register.html')
 
-# ---------- Booking (Customer only) ----------
+# ---------- Booking (Customer) ----------
 @app.route('/booking')
 @login_required
 def booking_page():
@@ -246,7 +261,6 @@ def create_booking():
         price = ROOM_TYPES[room_type]['price'] * nights
 
         conn = get_db()
-        # Duplicate check again
         existing = conn.execute(
             "SELECT id FROM bookings WHERE room_type=? AND check_in=? AND time=? AND status='active'",
             (room_type, check_in, time_slot)
@@ -280,11 +294,94 @@ def my_bookings():
     conn.close()
     return render_template('my_bookings.html', bookings=bookings, user=session)
 
-# ---------- Admin Dash (Admin only) ----------
+# ---------- QR Code Generation ----------
+@app.route('/booking/qr/<int:booking_id>')
+@login_required
+def booking_qr(booking_id):
+    # Only the booking owner or admin can view the QR
+    conn = get_db()
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    conn.close()
+    if not booking:
+        return "Booking not found", 404
+    if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
+        return "Unauthorized", 403
+
+    # Create QR content (just the booking ID, the scanner will look it up)
+    qr_data = str(booking_id)
+    img = qrcode.make(qr_data)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
+# ---------- Admin: Scanner & Time Recording ----------
+@app.route('/scanner')
+@admin_required
+def scanner():
+    return render_template('scanner.html', user=session)
+
+@app.route('/api/record_time_in', methods=['POST'])
+@admin_required
+def record_time_in():
+    data = request.json
+    booking_id = int(data['booking_id'])
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_db()
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    if not booking:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking not found.'})
+    if booking['status'] != 'active':
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking is not active.'})
+    if booking['time_in']:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Time‑in already recorded.'})
+    conn.execute("UPDATE bookings SET time_in=? WHERE id=?", (now, booking_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'time_in': now, 'message': 'Time‑in recorded.'})
+
+@app.route('/api/record_time_out', methods=['POST'])
+@admin_required
+def record_time_out():
+    data = request.json
+    booking_id = int(data['booking_id'])
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_db()
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    if not booking:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking not found.'})
+    if booking['status'] != 'active':
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking is not active.'})
+    if not booking['time_in']:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Time‑in must be recorded first.'})
+    if booking['time_out']:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Time‑out already recorded.'})
+    conn.execute("UPDATE bookings SET time_out=? WHERE id=?", (now, booking_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'time_out': now, 'message': 'Time‑out recorded.'})
+
+# ---------- Admin Dashboard (unchanged, but now shows time_in/out) ----------
 @app.route('/admin')
 @admin_required
 def admin():
     return render_template('admin.html', room_types=ROOM_TYPES, user=session)
+
+# API endpoints for admin (bookings, stats, cancel, edit) unchanged but queries now include time_in/out
+@app.route('/api/bookings')
+@admin_required
+def get_bookings():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM bookings ORDER BY booking_date DESC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 @app.route('/api/cancel_booking', methods=['POST'])
 @login_required
@@ -296,12 +393,9 @@ def cancel_booking():
     if not booking:
         conn.close()
         return jsonify({'success': False, 'message': 'Booking not found.'})
-    
-    # Allow if admin or the owner of the booking
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         conn.close()
         return jsonify({'success': False, 'message': 'Unauthorized.'}), 403
-    
     conn.execute("UPDATE bookings SET status='cancelled' WHERE id=?", (booking_id,))
     conn.commit()
     conn.close()
@@ -350,14 +444,6 @@ def edit_booking():
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': 'Booking updated.', 'new_total': final_price})
-
-@app.route('/api/bookings')
-@admin_required
-def get_bookings():
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM bookings ORDER BY booking_date DESC").fetchall()
-    conn.close()
-    return jsonify([dict(r) for r in rows])
 
 @app.route('/api/stats')
 @admin_required
