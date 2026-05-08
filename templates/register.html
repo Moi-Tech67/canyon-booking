@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .register-box { background: white; padding: 3rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 450px; }
+        h2 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; text-align: center; margin-bottom: 2rem; color: #1E1E1E; }
+        label { display: block; margin-bottom: 0.4rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #8B7355; }
+        input { width: 100%; padding: 0.8rem; margin-bottom: 1.2rem; border: 1px solid #E0DCD3; font-family: inherit; }
+        button { width: 100%; background: #C4A962; color: white; border: none; padding: 1rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.2em; cursor: pointer; }
+        button:hover { background: #1A1A1A; }
+        .flash { margin-bottom: 1rem; padding: 0.7rem; font-size: 0.9rem; }
+        .flash.error { background: #F4E6E6; color: #A12B2B; }
+        .flash.success { background: #E6F0E6; color: #2B5E2B; }
+        a { color: #8B7355; text-decoration: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="register-box">
+        <h2>Create Account</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <label>Full Name</label>
+            <input type="text" name="name" required>
+            <label>Email</label>
+            <input type="email" name="email" required>
+            <label>Password</label>
+            <input type="password" name="password" required>
+            <label>Confirm Password</label>
+            <input type="password" name="confirm" required>
+            <button type="submit">Register</button>
+        </form>
+        <p style="text-align:center; margin-top:1rem;">
+            Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+        </p>
+    </div>
+</body>
+</html>

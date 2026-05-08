@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Bookings | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; padding: 2rem; }
+        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: #fff; text-decoration: none; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        h1 { margin-top: 6rem; margin-bottom: 2rem; font-size: 2rem; font-weight: 300; text-transform: uppercase; letter-spacing: 0.2em; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        th, td { padding: 0.7rem; border: 1px solid #E0DCD3; font-size: 0.85rem; }
+        th { background: #C4A962; color: white; text-transform: uppercase; }
+        .status-cancelled { color: #A12B2B; font-weight: bold; }
+        .cancel-btn { background: #A12B2B; color: white; border: none; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.7rem; border-radius: 3px; }
+        .cancel-btn:hover { background: #8B0000; }
+        .message { padding: 1rem; margin: 1rem 0; display: none; font-size: 0.9rem; }
+        .message.success { background: #E6F0E6; color: #2B5E2B; display: block; }
+        .message.error { background: #F4E6E6; color: #A12B2B; display: block; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/booking">Book Now</a></li>
+            <li><a href="/my-bookings">My Bookings</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <h1>My Reservations</h1>
+    <div id="message" class="message"></div>
+
+    {% if bookings %}
+    <table>
+        <tr>
+            <th>ID</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Time</th><th>Guests</th><th>Price</th><th>Status</th><th>Action</th>
+        </tr>
+        {% for b in bookings %}
+        <tr id="row-{{ b.id }}">
+            <td>{{ b.id }}</td>
+            <td>{{ b.room_type }}</td>
+            <td>{{ b.check_in }}</td>
+            <td>{{ b.check_out }}</td>
+            <td>{{ b.time }}</td>
+            <td>{{ b.guests }}</td>
+            <td>${{ b.total_price }}</td>
+            <td class="{{ 'status-cancelled' if b.status=='cancelled' }}">{{ b.status }}</td>
+            <td>
+                {% if b.status == 'active' %}
+                <button class="cancel-btn" onclick="cancelBooking({{ b.id }})">Cancel</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>You have no bookings yet.</p>
+    {% endif %}
+
+    <script>
+        async function cancelBooking(bookingId) {
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            const res = await fetch('/api/cancel_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ booking_id: bookingId })
+            });
+            const data = await res.json();
+            const msgDiv = document.getElementById('message');
+            if (data.success) {
+                msgDiv.className = 'message success';
+                msgDiv.textContent = 'Booking cancelled.';
+                // Update the row style
+                const row = document.getElementById('row-' + bookingId);
+                if (row) {
+                    row.querySelector('td:nth-child(8)').textContent = 'cancelled';
+                    row.querySelector('td:nth-child(8)').classList.add('status-cancelled');
+                    row.querySelector('td:nth-child(9)').innerHTML = '';  // remove button
+                }
+            } else {
+                msgDiv.className = 'message error';
+                msgDiv.textContent = 'Error: ' + data.message;
+            }
+        }
+    </script>
+</body>
+</html>

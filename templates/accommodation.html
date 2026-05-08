@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accommodations | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
+        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+        section { padding: 8rem 2rem 4rem; max-width: 1300px; margin: 0 auto; }
+        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-bottom: 3rem; }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+        .room-card { background: white; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .room-card:hover { transform: translateY(-8px); }
+        .room-card-image { height: 220px; background-size: cover; background-position: center; }
+        .room-card-info { padding: 1.5rem; }
+        .room-card-name { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .room-card-price { font-size: 1.2rem; font-weight: 500; color: #8B7355; margin-bottom: 0.8rem; }
+        .room-card-desc { font-size: 0.9rem; color: #666; line-height: 1.5; margin-bottom: 1rem; }
+        .room-card-amenities { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .room-card-amenities li { background: #F5F2EB; padding: 0.3rem 0.7rem; font-size: 0.7rem; color: #5A4A3A; }
+        footer { text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #E0DCD3; color: #9A9A9A; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation" class="active">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section>
+        <h2 class="section-title">Our Accommodations</h2>
+        <div class="room-grid" id="roomGrid"></div>
+    </section>
+
+    <footer>&copy; 2026 The Canyon Hotels & Resorts. All rights reserved.</footer>
+
+    <script>
+        const roomTypes = {{ room_types | tojson | safe }};
+        const roomImages = [
+            'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/1579253/pexels-photo-1579253.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/271639/pexels-photo-271639.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=600'
+        ];
+        const grid = document.getElementById('roomGrid');
+        let idx = 0;
+        for (const [type, details] of Object.entries(roomTypes)) {
+            const card = document.createElement('div');
+            card.className = 'room-card';
+            card.innerHTML = `
+                <div class="room-card-image" style="background-image: url('${roomImages[idx % roomImages.length]}')"></div>
+                <div class="room-card-info">
+                    <h3 class="room-card-name">${type}</h3>
+                    <div class="room-card-price">$${details.price}<span style="font-size:0.8rem;">/night</span></div>
+                    <p class="room-card-desc">${details.description}</p>
+                    <ul class="room-card-amenities">${details.amenities.map(a => `<li>${a}</li>`).join('')}</ul>
+                </div>`;
+            grid.appendChild(card);
+            idx++;
+        }
+    </script>
+</body>
+</html>

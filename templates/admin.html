@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; margin: 2rem; background: #F5F2EB; color: #1E1E1E; }
+        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 900; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+        h1 { margin-top: 5rem; font-size: 2rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; }
+        .stats { display: flex; gap: 1.5rem; margin: 2rem 0; flex-wrap: wrap; }
+        .stat-box { background: white; padding: 1.2rem; text-align: center; flex: 1; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-box h3 { font-size: 2rem; color: #8B7355; margin-bottom: 0.3rem; }
+        .stat-box p { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #5A4A3A; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 3rem; }
+        th, td { padding: 0.75rem; border: 1px solid #E0DCD3; font-size: 0.85rem; }
+        th { background: #C4A962; color: white; text-transform: uppercase; letter-spacing: 0.1em; }
+        .actions button { padding: 0.3rem 0.8rem; border: none; cursor: pointer; font-size: 0.7rem; border-radius: 3px; margin-right: 4px; }
+        .edit-btn { background: #8B7355; color: white; }
+        .cancel-btn { background: #C4A962; color: white; }
+        .edit-btn:disabled, .cancel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        #editModal form { background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px; }
+        #editModal label { display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 500; }
+        #editModal input, #editModal select { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; border: 1px solid #E0DCD3; font-family: inherit; }
+        footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: #9A9A9A; margin-top: 3rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <h1>Admin Dashboard</h1>
+
+    <div class="stats">
+        <div class="stat-box"><h3 id="statTotal">0</h3><p>Total Bookings</p></div>
+        <div class="stat-box"><h3 id="statActive">0</h3><p>Active</p></div>
+        <div class="stat-box"><h3 id="statCancelled">0</h3><p>Cancelled</p></div>
+        <div class="stat-box"><h3 id="statRevenue">$0</h3><p>Revenue</p></div>
+        <div class="stat-box"><h3 id="statAvg">$0</h3><p>Avg / Active</p></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
+                <th>Check-in</th><th>Check-out</th><th>Time</th><th>Guests</th>
+                <th>Price</th><th>Status</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="bookingTable"></tbody>
+    </table>
+
+    <div id="editModal">
+        <form id="editForm">
+            <h3 style="margin-bottom:1rem;">Edit Booking</h3>
+            <input type="hidden" id="edit_id">
+            <label>Name<input type="text" id="edit_name"></label>
+            <label>Email<input type="email" id="edit_email"></label>
+            <label>Phone<input type="tel" id="edit_phone"></label>
+            <label>Room Type
+                <select id="edit_room_type">
+                    {% for room, details in room_types.items() %}
+                    <option value="{{ room }}">{{ room }} (${{ details.price }}/night)</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Check-in<input type="date" id="edit_check_in"></label>
+            <label>Check-out<input type="date" id="edit_check_out"></label>
+            <label>Time<input type="time" id="edit_time"></label>
+            <label>Guests<input type="number" id="edit_guests" min="1" max="10"></label>
+            <div style="text-align:right; margin-top:1rem;">
+                <button type="button" id="saveEditBtn" style="background:#C4A962; color:white; border:none; padding:0.5rem 1.5rem; cursor:pointer;">Save</button>
+                <button type="button" onclick="document.getElementById('editModal').style.display='none'" style="background:#ccc; border:none; padding:0.5rem 1.5rem; margin-left:0.5rem; cursor:pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <footer>&copy; 2026 The Canyon Hotels & Resorts. All rights reserved.</footer>
+
+    <script>
+        async function loadStats() {
+            const res = await fetch('/api/stats');
+            const d = await res.json();
+            document.getElementById('statTotal').textContent = d.total;
+            document.getElementById('statActive').textContent = d.active;
+            document.getElementById('statCancelled').textContent = d.cancelled;
+            document.getElementById('statRevenue').textContent = '$' + d.revenue.toLocaleString();
+            document.getElementById('statAvg').textContent = '$' + d.average_per_active;
+        }
+
+        async function loadBookings() {
+            const res = await fetch('/api/bookings');
+            const bookings = await res.json();
+            const tbody = document.getElementById('bookingTable');
+            tbody.innerHTML = '';
+            bookings.forEach(b => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
+                    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
+                    <td>${b.time}</td><td>${b.guests}</td><td>$${b.total_price}</td>
+                    <td>${b.status}</td>
+                    <td class="actions">
+                        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
+                        <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openEditModal(booking) {
+            document.getElementById('edit_id').value = booking.id;
+            document.getElementById('edit_name').value = booking.name;
+            document.getElementById('edit_email').value = booking.email;
+            document.getElementById('edit_phone').value = booking.phone;
+            document.getElementById('edit_room_type').value = booking.room_type;
+            document.getElementById('edit_check_in').value = booking.check_in;
+            document.getElementById('edit_check_out').value = booking.check_out;
+            document.getElementById('edit_time').value = booking.time;
+            document.getElementById('edit_guests').value = booking.guests;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        document.getElementById('saveEditBtn').addEventListener('click', async () => {
+            const id = parseInt(document.getElementById('edit_id').value);
+            const data = {
+                booking_id: id,
+                name: document.getElementById('edit_name').value,
+                email: document.getElementById('edit_email').value,
+                phone: document.getElementById('edit_phone').value,
+                room_type: document.getElementById('edit_room_type').value,
+                check_in: document.getElementById('edit_check_in').value,
+                check_out: document.getElementById('edit_check_out').value,
+                time: document.getElementById('edit_time').value,
+                guests: parseInt(document.getElementById('edit_guests').value)
+            };
+            const res = await fetch('/api/edit_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('Booking updated. New total: $' + result.new_total);
+                document.getElementById('editModal').style.display = 'none';
+                loadBookings();
+                loadStats();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
+
+        async function cancelBooking(id) {
+            if (!confirm('Cancel booking #' + id + '?')) return;
+            const res = await fetch('/api/cancel_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({booking_id: id})
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadBookings();
+                loadStats();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        }
+
+        loadStats();
+        loadBookings();
+    </script>
+</body>
+</html>

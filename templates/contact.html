@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #F5F2EB;
+            color: #1E1E1E;
+        }
+        nav {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: #FFFFFF;
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #C4A962;
+        }
+        section {
+            padding: 8rem 2rem 4rem;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.8rem;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 3rem;
+            color: #1E1E1E;
+        }
+        .contact-info {
+            font-size: 1.1rem;
+            line-height: 2.2;
+            color: #4A4A4A;
+        }
+        .contact-info a {
+            color: #8B7355;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.8rem;
+            color: #9A9A9A;
+            border-top: 1px solid #E0DCD3;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/contact" class="active">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section>
+        <h2 class="section-title">Contact Us</h2>
+        <div class="contact-info">
+            <p><strong>The Canyon Hotels & Resorts</strong></p>
+            <p>123 Canyon Ridge Road, Sedona, AZ 86336</p>
+            <p>Phone: <a href="tel:+15551234567">+1 (555) 123‑4567</a></p>
+            <p>Email: <a href="mailto:reservations@thecanyon.com">reservations@thecanyon.com</a></p>
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2026 The Canyon Hotels & Resorts. All rights reserved.
+    </footer>
+</body>
+</html>

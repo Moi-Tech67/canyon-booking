@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #F5F2EB;
+            color: #1E1E1E;
+        }
+        nav {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: #FFFFFF;
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #C4A962;
+        }
+        section {
+            padding: 8rem 2rem 4rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.8rem;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #1E1E1E;
+        }
+        .about-content {
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .about-text {
+            flex: 1;
+            min-width: 280px;
+        }
+        .about-text p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #4A4A4A;
+            margin-bottom: 1.5rem;
+        }
+        .about-image {
+            flex: 1;
+            min-width: 280px;
+            height: 400px;
+            background: url('https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=800') center/cover no-repeat;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.8rem;
+            color: #9A9A9A;
+            border-top: 1px solid #E0DCD3;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about" class="active">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section>
+        <h2 class="section-title">About The Canyon</h2>
+        <div class="about-content">
+            <div class="about-text">
+                <p>Nestled in the heart of nature’s grandest landscapes, The Canyon Hotels & Resorts offers an unparalleled escape. Our philosophy is rooted in understated luxury, where every sunrise paints the cliffs and every evening breeze carries the scent of pine and adventure.</p>
+                <p>With world‑class service, exquisite dining, and breathtaking views, we invite you to experience a stay that redefines tranquility.</p>
+            </div>
+            <div class="about-image"></div>
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2026 The Canyon Hotels & Resorts. All rights reserved.
+    </footer>
+</body>
+</html>
