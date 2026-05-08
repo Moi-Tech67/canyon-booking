@@ -7,6 +7,7 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_cors import CORS
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_default_dev_key')
@@ -322,7 +323,7 @@ def scanner():
 def record_time_in():
     data = request.json
     booking_id = int(data['booking_id'])
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = now = ph_now()
     conn = get_db()
     booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
     if not booking or booking['status'] != 'active':
@@ -341,7 +342,7 @@ def record_time_in():
 def record_time_out():
     data = request.json
     booking_id = int(data['booking_id'])
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = now = ph_now()
     conn = get_db()
     booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
     if not booking or booking['status'] != 'active':
@@ -464,6 +465,10 @@ def calculate_nights(check_in, check_out):
     d1 = datetime.strptime(check_in, fmt)
     d2 = datetime.strptime(check_out, fmt)
     return (d2 - d1).days
+
+def ph_now():
+    """Return current Philippine time (UTC+8) as a datetime string."""
+    return (datetime.utcnow() + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
 
 init_db()
 
