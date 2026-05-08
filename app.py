@@ -142,6 +142,14 @@ def about():
 def contact():
     return render_template('contact.html', user=session)
 
+@app.route('/rules')
+@login_required
+def rules():
+    if session.get('role') != 'customer':
+        flash('Access denied.', 'error')
+        return redirect(url_for('admin') if session.get('role') == 'admin' else url_for('index'))
+    return render_template('rules.html', user=session)
+
 # ----------------------------------------------------------------
 # Authentication
 # ----------------------------------------------------------------
@@ -388,6 +396,12 @@ def cancel_booking():
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         conn.close()
         return jsonify({'success': False, 'message': 'Unauthorized.'}), 403
+
+    # Block cancellation if already checked in (time_in exists)
+    if booking['time_in']:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking cannot be cancelled after check‑in.'})
+
     conn.execute("UPDATE bookings SET status='cancelled' WHERE id=?", (booking_id,))
     conn.commit()
     conn.close()
