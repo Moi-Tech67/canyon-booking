@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
 from datetime import datetime
 import sqlite3
 import qrcode
@@ -8,7 +8,7 @@ from functools import wraps
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.secret_key = 'the_canyon_secret_key_2024'
+app.secret_key = 'my_super_secret_key_2024'
 CORS(app)
 
 import os
