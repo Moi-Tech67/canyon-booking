@@ -14,7 +14,6 @@ CORS(app)
 
 # Database file stored in /tmp for Render compatibility
 DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
-init_db()
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
@@ -466,6 +465,7 @@ def calculate_nights(check_in, check_out):
     d2 = datetime.strptime(check_out, fmt)
     return (d2 - d1).days
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, port=5000)
