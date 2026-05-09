@@ -85,14 +85,14 @@ def init_db():
         role TEXT NOT NULL CHECK(role IN ('admin','customer'))
     )''')
 
-    # Rooms table
+    # Rooms table (individual rooms)
     c.execute('''CREATE TABLE IF NOT EXISTS rooms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         room_number TEXT UNIQUE NOT NULL,
         room_type TEXT NOT NULL
     )''')
 
-    # Pre‑populate rooms
+    # Pre‑populate rooms if empty
     c.execute("SELECT COUNT(*) FROM rooms")
     if c.fetchone()[0] == 0:
         for room_type, count in ROOM_INVENTORY.items():
@@ -102,7 +102,7 @@ def init_db():
                 c.execute("INSERT INTO rooms (room_number, room_type) VALUES (?, ?)",
                           (room_number, room_type))
 
-    # Bookings table
+    # Bookings table – full schema
     c.execute('''CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -128,7 +128,13 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # Pre‑create accounts
+    # ***** NEW: Add 'paid' column if it doesn't exist (safe migration) *****
+    try:
+        c.execute("ALTER TABLE bookings ADD COLUMN paid INTEGER DEFAULT 0")
+    except:
+        pass
+
+    # Pre‑create accounts if none exist
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -593,6 +599,24 @@ def edit_booking():
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'message': 'Booking updated.', 'new_total': final_price})
+
+@app.route('/api/mark_paid', methods=['POST'])
+@admin_required
+def mark_paid():
+    data = request.json
+    booking_id = int(data['booking_id'])
+    conn = get_db()
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    if not booking or booking['status'] != 'active':
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking not found or not active.'})
+    if booking['paid']:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Already marked as paid.'})
+    conn.execute("UPDATE bookings SET paid=1, balance=0 WHERE id=?", (booking_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': 'Booking marked as fully paid.'})
 
 @app.route('/api/stats')
 @admin_required
