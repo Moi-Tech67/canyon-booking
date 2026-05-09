@@ -320,16 +320,57 @@ def check_availability():
     if not available_room:
         return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
 
-    # Count available rooms for display
+   @app.route('/api/check_availability', methods=['POST'])
+@login_required
+def check_availability():
+    if session.get('role') != 'customer':
+        return jsonify({'available': False, 'message': 'Only customers can check availability.'})
+    data = request.json
+    check_in = data['check_in']
+    check_out = data['check_out']
+    room_type = data['room_type']
+    guests = int(data.get('guests', 1))
+
+    if datetime.strptime(check_out, "%Y-%m-%d") <= datetime.strptime(check_in, "%Y-%m-%d"):
+        return jsonify({'available': False, 'message': 'Check‑out must be after check‑in.'})
+
+    nights = calculate_nights(check_in, check_out)
+    price_per_night = ROOM_TYPES[room_type]['price']
+    total_room = price_per_night * nights
+
+    # Check if a free room exists
+    available_room = assign_room(room_type, check_in, check_out)
+    if not available_room:
+        return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
+
+    # Count available rooms for display (keep connection open until both queries finish)
     conn = get_db()
     total_rooms = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type = ?", (room_type,)).fetchone()[0]
-    conn.close()
-    # Use full count of free rooms (this is approximate)
-    # We'll just use a simple count of used rooms to show availability
     used_rooms = conn.execute('''SELECT COUNT(*) FROM bookings
                                 WHERE room_type = ? AND status = 'active'
                                 AND check_in < ? AND check_out > ?''',
                               (room_type, check_out, check_in)).fetchone()[0]
+    conn.close()
+    available_count = max(0, total_rooms - used_rooms)
+
+    # Activities total
+    activities_total = 0
+    selected_activities = data.get('activities', [])
+    for act in selected_activities:
+        if act in ACTIVITIES:
+            activities_total += ACTIVITIES[act]
+
+    grand_total = total_room + activities_total
+
+    return jsonify({
+        'available': True,
+        'rooms_left': available_count,
+        'price_per_night': price_per_night,
+        'room_total': total_room,
+        'activities_total': activities_total,
+        'total_price': grand_total,
+        'nights': nights
+    })
     available_count = max(0, total_rooms - used_rooms)
 
     activities_total = 0
