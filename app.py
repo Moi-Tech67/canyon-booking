@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import qrcode
 import io
@@ -7,13 +7,11 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_cors import CORS
-from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'a_default_dev_key')
 CORS(app)
 
-# Database file stored in /tmp for Render compatibility
 DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
 
 ROOM_TYPES = {
@@ -21,32 +19,41 @@ ROOM_TYPES = {
         'price': 350,
         'capacity': 2,
         'description': 'Spacious room with breathtaking canyon views, king-size bed, and private balcony.',
-        'amenities': ['King Bed', 'Private Balcony', 'Mini Bar', 'Free WiFi', 'Room Service']
+        'amenities': ['King Bed', 'Balcony', 'Pool Access', 'Free WiFi', 'Room Service']
     },
     'Premium Suite': {
         'price': 550,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
-        'amenities': ['2 Bedrooms', 'Living Room', 'Jacuzzi', 'Fireplace', 'Butler Service']
+        'amenities': ['2 Bedrooms', 'Living Room', 'Pool Access', 'Fireplace', 'Butler Service']
     },
     'Presidential Suite': {
         'price': 1200,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
-        'amenities': ['3 Bedrooms', 'Private Pool', 'Butler Service', 'Wine Cellar', 'Helicopter Pad Access']
+        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Kids Area Access', 'Helicopter Pad Access']
     },
     'Standard Room': {
         'price': 200,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
-        'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Coffee Maker', 'Safe Box']
+        'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Kids Area Access', 'Pool Access']
     },
     'Family Suite': {
         'price': 450,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
-        'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area', 'Game Console', 'Laundry']
+        'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area Access', 'Free Wifi', 'Pool Access']
     }
+}
+
+# Total rooms available for each type
+ROOM_INVENTORY = {
+    'Deluxe Canyon View': 20,
+    'Premium Suite': 15,
+    'Presidential Suite': 5,
+    'Standard Room': 40,
+    'Family Suite': 10
 }
 
 def init_db():
@@ -81,13 +88,11 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # Create default accounts if none exist
+    # Pre-create accounts if none exist
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
-        # Admin
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
                   ('admin@canyon.com', generate_password_hash('admin123'), 'Admin Canyon', 'admin'))
-        # 5 customers
         customers = [
             ('alice@example.com', 'alice123', 'Alice Johnson'),
             ('bob@example.com', 'bob123', 'Bob Williams'),
@@ -123,16 +128,35 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# ----------------------------------------------------------------
-# Public pages
-# ----------------------------------------------------------------
+# Philippine time helper
+def ph_now():
+    return (datetime.utcnow() + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
+
+# Count overlapping active bookings for a room type and date range
+def get_available_rooms(room_type, check_in, check_out, exclude_id=None):
+    conn = get_db()
+    query = '''SELECT COUNT(*) FROM bookings
+               WHERE room_type = ?
+                 AND status = 'active'
+                 AND check_in < ?
+                 AND check_out > ?'''
+    params = [room_type, check_out, check_in]
+    if exclude_id:
+        query += ' AND id != ?'
+        params.append(exclude_id)
+    used = conn.execute(query, params).fetchone()[0]
+    conn.close()
+    total = ROOM_INVENTORY.get(room_type, 0)
+    return max(0, total - used)
+
+# ---------- Public routes ----------
 @app.route('/')
 def index():
     return render_template('index.html', user=session)
 
 @app.route('/accommodation')
 def accommodation():
-    return render_template('accommodation.html', room_types=ROOM_TYPES, user=session)
+    return render_template('accommodation.html', room_types=ROOM_TYPES, inventory=ROOM_INVENTORY, user=session)
 
 @app.route('/about')
 def about():
@@ -150,9 +174,7 @@ def rules():
         return redirect(url_for('admin') if session.get('role') == 'admin' else url_for('index'))
     return render_template('rules.html', user=session)
 
-# ----------------------------------------------------------------
-# Authentication
-# ----------------------------------------------------------------
+# ---------- Authentication ----------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -204,14 +226,12 @@ def register():
             conn.close()
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
-        except Exception as e:
+        except:
             flash('Registration failed. Please try again.', 'error')
             return render_template('register.html')
     return render_template('register.html')
 
-# ----------------------------------------------------------------
-# Booking (customer only)
-# ----------------------------------------------------------------
+# ---------- Booking (customer only) ----------
 @app.route('/booking')
 @login_required
 def booking_page():
@@ -230,23 +250,28 @@ def check_availability():
     check_out = data['check_out']
     room_type = data['room_type']
     guests = int(data.get('guests', 1))
+    # time slot not used for inventory, but we'll keep it for info
     time_slot = data.get('time', '12:00')
+
+    if datetime.strptime(check_out, "%Y-%m-%d") <= datetime.strptime(check_in, "%Y-%m-%d"):
+        return jsonify({'available': False, 'message': 'Check‑out must be after check‑in.'})
 
     nights = calculate_nights(check_in, check_out)
     price_per_night = ROOM_TYPES[room_type]['price']
     total = price_per_night * nights
 
-    # Duplicate slot check
-    conn = get_db()
-    existing = conn.execute(
-        "SELECT id FROM bookings WHERE room_type=? AND check_in=? AND time=? AND status='active'",
-        (room_type, check_in, time_slot)
-    ).fetchone()
-    conn.close()
-    if existing:
-        return jsonify({'available': False, 'message': 'This time slot is already booked.'})
+    # Count available rooms for this date range
+    available_rooms = get_available_rooms(room_type, check_in, check_out)
+    if available_rooms <= 0:
+        return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
 
-    return jsonify({'available': True, 'price_per_night': price_per_night, 'total_price': total, 'nights': nights})
+    return jsonify({
+        'available': True,
+        'rooms_left': available_rooms,
+        'price_per_night': price_per_night,
+        'total_price': total,
+        'nights': nights
+    })
 
 @app.route('/api/create_booking', methods=['POST'])
 @login_required
@@ -263,15 +288,11 @@ def create_booking():
         nights = calculate_nights(check_in, check_out)
         price = ROOM_TYPES[room_type]['price'] * nights
 
-        conn = get_db()
-        existing = conn.execute(
-            "SELECT id FROM bookings WHERE room_type=? AND check_in=? AND time=? AND status='active'",
-            (room_type, check_in, time_slot)
-        ).fetchone()
-        if existing:
-            conn.close()
-            return jsonify({'success': False, 'message': 'Time slot already taken.'})
+        # Re-validate availability (with no exclusions)
+        if get_available_rooms(room_type, check_in, check_out) <= 0:
+            return jsonify({'success': False, 'message': 'The room type is already fully booked for these dates.'})
 
+        conn = get_db()
         conn.execute('''INSERT INTO bookings 
             (user_id, name, email, phone, room_type, check_in, check_out, time, guests, special_requests, total_price)
             VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
@@ -297,9 +318,7 @@ def my_bookings():
     conn.close()
     return render_template('my_bookings.html', bookings=bookings, user=session)
 
-# ----------------------------------------------------------------
-# QR Code (customer & admin)
-# ----------------------------------------------------------------
+# ---------- QR Code ----------
 @app.route('/booking/qr/<int:booking_id>')
 @login_required
 def booking_qr(booking_id):
@@ -318,9 +337,7 @@ def booking_qr(booking_id):
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
-# ----------------------------------------------------------------
-# Admin scanner & time recording
-# ----------------------------------------------------------------
+# ---------- Admin: Scanner & Time Recording ----------
 @app.route('/scanner')
 @admin_required
 def scanner():
@@ -331,7 +348,7 @@ def scanner():
 def record_time_in():
     data = request.json
     booking_id = int(data['booking_id'])
-    now = now = ph_now()
+    now = ph_now()
     conn = get_db()
     booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
     if not booking or booking['status'] != 'active':
@@ -350,7 +367,7 @@ def record_time_in():
 def record_time_out():
     data = request.json
     booking_id = int(data['booking_id'])
-    now = now = ph_now()
+    now = ph_now()
     conn = get_db()
     booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
     if not booking or booking['status'] != 'active':
@@ -367,9 +384,7 @@ def record_time_out():
     conn.close()
     return jsonify({'success': True, 'time_out': now, 'message': 'Time‑out recorded.'})
 
-# ----------------------------------------------------------------
-# Admin dashboard
-# ----------------------------------------------------------------
+# ---------- Admin Dashboard ----------
 @app.route('/admin')
 @admin_required
 def admin():
@@ -393,6 +408,7 @@ def cancel_booking():
     if not booking:
         conn.close()
         return jsonify({'success': False, 'message': 'Booking not found.'})
+
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         conn.close()
         return jsonify({'success': False, 'message': 'Unauthorized.'}), 403
@@ -420,15 +436,12 @@ def edit_booking():
 
     new_room = data.get('room_type')
     new_check_in = data.get('check_in')
-    new_time = data.get('time')
-    if new_room and new_check_in and new_time:
-        existing = conn.execute(
-            "SELECT id FROM bookings WHERE room_type=? AND check_in=? AND time=? AND status='active' AND id!=?",
-            (new_room, new_check_in, new_time, booking_id)
-        ).fetchone()
-        if existing:
+    new_check_out = data.get('check_out')
+    if new_room and new_check_in and new_check_out:
+        avail = get_available_rooms(new_room, new_check_in, new_check_out, exclude_id=booking_id)
+        if avail <= 0:
             conn.close()
-            return jsonify({'success': False, 'message': 'Time slot already taken.'})
+            return jsonify({'success': False, 'message': 'No rooms available for the new selection.'})
 
     updates = {}
     for field in ['name', 'email', 'phone', 'room_type', 'check_in', 'check_out', 'time', 'guests', 'special_requests']:
@@ -480,10 +493,7 @@ def calculate_nights(check_in, check_out):
     d2 = datetime.strptime(check_out, fmt)
     return (d2 - d1).days
 
-def ph_now():
-    """Return current Philippine time (UTC+8) as a datetime string."""
-    return (datetime.utcnow() + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
-
+# --- Call init_db at module level (for Render) ---
 init_db()
 
 if __name__ == '__main__':

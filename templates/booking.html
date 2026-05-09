@@ -5,6 +5,7 @@
     <title>Book Your Stay | The Canyon</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
+        /* same styles as before, unchanged */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
         nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
@@ -24,6 +25,7 @@
         .price-label { font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: #5A4A3A; margin-bottom: 0.5rem; }
         .price-amount { font-size: 2.5rem; font-weight: 400; color: #8B7355; font-family: 'Cormorant Garamond', serif; }
         .price-detail { font-size: 0.8rem; color: #6B6258; margin-top: 0.25rem; }
+        .rooms-left { font-size: 0.9rem; color: #2B5E2B; font-weight: 500; margin-top: 0.5rem; }
         .submit-btn { background: #C4A962; color: #fff; border: none; padding: 1rem 2rem; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; width: 100%; }
         .submit-btn:hover { background: #1A1A1A; }
         .submit-btn:disabled { background: #C8C2B8; cursor: not-allowed; }
@@ -46,6 +48,17 @@
             <li><a href="/accommodation">Rooms</a></li>
             <li><a href="/booking" class="active">Book</a></li>
             <li><a href="/contact">Contact</a></li>
+            {% if user and user.email %}
+                {% if user.role == 'admin' %}
+                    <li><a href="/admin">Admin</a></li>
+                {% else %}
+                    <li><a href="/my-bookings">My Bookings</a></li>
+                    <li><a href="/rules">Rules</a></li>
+                {% endif %}
+                <li><a href="/logout">Logout</a></li>
+            {% else %}
+                <li><a href="/login">Login</a></li>
+            {% endif %}
         </ul>
     </nav>
 
@@ -64,7 +77,12 @@
                     <div class="form-group"><label for="time">Check‑in Time *</label><input type="time" id="time" value="15:00" required></div>
                     <div class="form-group full-width"><label for="specialRequests">Special Requests (optional)</label><textarea id="specialRequests" rows="2"></textarea></div>
                 </div>
-                <div class="price-display" id="priceDisplay"><div class="price-label">Total Stay</div><div class="price-amount" id="totalPrice">$0</div><div class="price-detail"><span id="nightsCount">0</span> nights · <span id="pricePerNight">$0</span> / night</div></div>
+                <div class="price-display" id="priceDisplay">
+                    <div class="price-label">Total Stay</div>
+                    <div class="price-amount" id="totalPrice">₱0</div>
+                    <div class="price-detail"><span id="nightsCount">0</span> nights · ₱<span id="pricePerNight">0</span>/night</div>
+                    <div class="rooms-left" id="roomsLeft"></div>
+                </div>
                 <div class="loading" id="loadingIndicator"><div class="spinner"></div><p style="margin-top:0.5rem; color:#8B7355;">Processing...</p></div>
                 <div class="message" id="message"></div>
                 <p style="font-size:0.8rem; color:#666; margin-top:1rem; text-align:center;">
@@ -83,7 +101,7 @@
         for (const [type, details] of Object.entries(roomTypes)) {
             const option = document.createElement('option');
             option.value = type;
-            option.textContent = `${type} — $${details.price} / night`;
+            option.textContent = `${type} — ₱${details.price.toLocaleString()} / night`;
             roomSelect.appendChild(option);
         }
 
@@ -141,9 +159,11 @@
 
         function displayPrice(data) {
             document.getElementById('priceDisplay').style.display = 'block';
-            document.getElementById('totalPrice').textContent = '$' + data.total_price.toLocaleString();
+            document.getElementById('totalPrice').textContent = '₱' + data.total_price.toLocaleString();
             document.getElementById('nightsCount').textContent = data.nights;
-            document.getElementById('pricePerNight').textContent = '$' + data.price_per_night;
+            document.getElementById('pricePerNight').textContent = data.price_per_night.toLocaleString();
+            const roomsLeftEl = document.getElementById('roomsLeft');
+            roomsLeftEl.textContent = `🛏️ ${data.rooms_left} room(s) left for this type on these dates`;
         }
         function hidePrice() { document.getElementById('priceDisplay').style.display = 'none'; }
         function showMessage(text, type) {
@@ -187,7 +207,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showMessage(`Reservation confirmed! Booking #${data.booking_id}. Total: $${data.total_price.toLocaleString()}`, 'success');
+                    showMessage(`Reservation confirmed! Booking #${data.booking_id}. Total: ₱${data.total_price.toLocaleString()}`, 'success');
                     document.getElementById('bookingForm').reset();
                     (function resetDates() {
                         const today = new Date();

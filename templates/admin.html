@@ -40,6 +40,7 @@
             <li><a href="/booking">Book</a></li>
             <li><a href="/contact">Contact</a></li>
             <li><a href="/scanner">QR Scanner</a></li>
+            <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>
 
@@ -49,39 +50,45 @@
         <div class="stat-box"><h3 id="statTotal">0</h3><p>Total Bookings</p></div>
         <div class="stat-box"><h3 id="statActive">0</h3><p>Active</p></div>
         <div class="stat-box"><h3 id="statCancelled">0</h3><p>Cancelled</p></div>
-        <div class="stat-box"><h3 id="statRevenue">$0</h3><p>Revenue</p></div>
-        <div class="stat-box"><h3 id="statAvg">$0</h3><p>Avg / Active</p></div>
+        <div class="stat-box"><h3 id="statRevenue">₱0</h3><p>Revenue</p></div>
+        <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg / Active</p></div>
     </div>
 
     <table>
-    <thead>
-        <tr>
-            <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
-            <th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th>
-            <th>Price</th><th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="bookingTable"></tbody>
-</table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
+                <th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th>
+                <th>Price</th><th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="bookingTable"></tbody>
+    </table>
 
     <div id="editModal">
         <form id="editForm">
             <h3 style="margin-bottom:1rem;">Edit Booking</h3>
             <input type="hidden" id="edit_id">
-            <label>Name<input type="text" id="edit_name"></label>
-            <label>Email<input type="email" id="edit_email"></label>
-            <label>Phone<input type="tel" id="edit_phone"></label>
-            <label>Room Type
-                <select id="edit_room_type">
-                    {% for room, details in room_types.items() %}
-                    <option value="{{ room }}">{{ room }} (${{ details.price }}/night)</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label>Check-in<input type="date" id="edit_check_in"></label>
-            <label>Check-out<input type="date" id="edit_check_out"></label>
-            <label>Time<input type="time" id="edit_time"></label>
-            <label>Guests<input type="number" id="edit_guests" min="1" max="10"></label>
+            <label>Name</label>
+            <input type="text" id="edit_name">
+            <label>Email</label>
+            <input type="email" id="edit_email">
+            <label>Phone</label>
+            <input type="tel" id="edit_phone">
+            <label>Room Type</label>
+            <select id="edit_room_type">
+                {% for room, details in room_types.items() %}
+                <option value="{{ room }}">{{ room }} (₱{{ details.price }}/night)</option>
+                {% endfor %}
+            </select>
+            <label>Check‑in</label>
+            <input type="date" id="edit_check_in">
+            <label>Check‑out</label>
+            <input type="date" id="edit_check_out">
+            <label>Time</label>
+            <input type="time" id="edit_time">
+            <label>Guests</label>
+            <input type="number" id="edit_guests" min="1" max="10">
             <div style="text-align:right; margin-top:1rem;">
                 <button type="button" id="saveEditBtn" style="background:#C4A962; color:white; border:none; padding:0.5rem 1.5rem; cursor:pointer;">Save</button>
                 <button type="button" onclick="document.getElementById('editModal').style.display='none'" style="background:#ccc; border:none; padding:0.5rem 1.5rem; margin-left:0.5rem; cursor:pointer;">Cancel</button>
@@ -98,8 +105,8 @@
             document.getElementById('statTotal').textContent = d.total;
             document.getElementById('statActive').textContent = d.active;
             document.getElementById('statCancelled').textContent = d.cancelled;
-            document.getElementById('statRevenue').textContent = '$' + d.revenue.toLocaleString();
-            document.getElementById('statAvg').textContent = '$' + d.average_per_active;
+            document.getElementById('statRevenue').textContent = '₱' + d.revenue.toLocaleString();
+            document.getElementById('statAvg').textContent = '₱' + d.average_per_active.toLocaleString();
         }
 
         async function loadBookings() {
@@ -110,16 +117,16 @@
             bookings.forEach(b => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-    <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
-    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
-    <td>${b.time}</td><td>${b.guests}</td><td>$${b.total_price}</td>
-    <td>${b.status}</td>
-    <td>${b.time_in || '-'}</td>
-    <td>${b.time_out || '-'}</td>
-    <td class="actions">
-        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
-        <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
-    </td>`;
+                    <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
+                    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
+                    <td>${b.time}</td><td>${b.guests}</td><td>₱${b.total_price.toLocaleString()}</td>
+                    <td>${b.status}</td>
+                    <td>${b.time_in || '-'}</td>
+                    <td>${b.time_out || '-'}</td>
+                    <td class="actions">
+                        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
+                        <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
+                    </td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -157,7 +164,7 @@
             });
             const result = await res.json();
             if (result.success) {
-                alert('Booking updated. New total: $' + result.new_total);
+                alert('Booking updated. New total: ₱' + result.new_total.toLocaleString());
                 document.getElementById('editModal').style.display = 'none';
                 loadBookings();
                 loadStats();

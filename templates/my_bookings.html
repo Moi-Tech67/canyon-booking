@@ -31,6 +31,7 @@
             <li><a href="/">Home</a></li>
             <li><a href="/booking">Book Now</a></li>
             <li><a href="/my-bookings">My Bookings</a></li>
+            <li><a href="/rules">Rules</a></li>
             <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>
@@ -52,7 +53,7 @@
             <td>{{ b.check_out }}</td>
             <td>{{ b.time }}</td>
             <td>{{ b.guests }}</td>
-            <td>${{ b.total_price }}</td>
+            <td>₱{{ '{:,.2f}'.format(b.total_price) }}</td>
             <td class="{{ 'status-cancelled' if b.status=='cancelled' }}">{{ b.status }}</td>
             <td>{{ b.time_in or '-' }}</td>
             <td>{{ b.time_out or '-' }}</td>
@@ -64,7 +65,7 @@
                 {% endif %}
             </td>
             <td>
-                {% if b.status == 'active' %}
+                {% if b.status == 'active' and not b.time_in %}
                 <button class="cancel-btn" onclick="cancelBooking({{ b.id }})">Cancel</button>
                 {% endif %}
             </td>
@@ -88,9 +89,12 @@
             if (data.success) {
                 msg.className = 'message success';
                 msg.textContent = 'Cancelled.';
-                document.getElementById('row-' + bookingId).querySelector('td:nth-child(8)').textContent = 'cancelled';
-                document.getElementById('row-' + bookingId).querySelector('td:nth-child(8)').classList.add('status-cancelled');
-                document.getElementById('row-' + bookingId).querySelector('td:nth-child(12)').innerHTML = '';
+                const row = document.getElementById('row-' + bookingId);
+                if (row) {
+                    row.querySelector('td:nth-child(8)').textContent = 'cancelled';
+                    row.querySelector('td:nth-child(8)').classList.add('status-cancelled');
+                    row.querySelector('td:nth-child(12)').innerHTML = ''; // remove cancel button
+                }
             } else {
                 msg.className = 'message error';
                 msg.textContent = data.message;

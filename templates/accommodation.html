@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accommodations | The Canyon</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -25,6 +24,7 @@
         .room-card-desc { font-size: 0.9rem; color: #666; line-height: 1.5; margin-bottom: 1rem; }
         .room-card-amenities { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .room-card-amenities li { background: #F5F2EB; padding: 0.3rem 0.7rem; font-size: 0.7rem; color: #5A4A3A; }
+        .room-count { font-size: 0.85rem; color: #5A4A3A; margin-top: 0.5rem; font-weight: 500; }
         footer { text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #E0DCD3; color: #9A9A9A; font-size: 0.8rem; }
     </style>
 </head>
@@ -36,6 +36,17 @@
             <li><a href="/accommodation" class="active">Rooms</a></li>
             <li><a href="/booking">Book</a></li>
             <li><a href="/contact">Contact</a></li>
+            {% if user and user.email %}
+                {% if user.role == 'admin' %}
+                    <li><a href="/admin">Admin</a></li>
+                {% else %}
+                    <li><a href="/my-bookings">My Bookings</a></li>
+                    <li><a href="/rules">Rules</a></li>
+                {% endif %}
+                <li><a href="/logout">Logout</a></li>
+            {% else %}
+                <li><a href="/login">Login</a></li>
+            {% endif %}
         </ul>
     </nav>
 
@@ -48,6 +59,7 @@
 
     <script>
         const roomTypes = {{ room_types | tojson | safe }};
+        const inventory = {{ inventory | tojson | safe }};
         const roomImages = [
             'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=600',
             'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -64,9 +76,10 @@
                 <div class="room-card-image" style="background-image: url('${roomImages[idx % roomImages.length]}')"></div>
                 <div class="room-card-info">
                     <h3 class="room-card-name">${type}</h3>
-                    <div class="room-card-price">$${details.price}<span style="font-size:0.8rem;">/night</span></div>
+                    <div class="room-card-price">₱${details.price.toLocaleString()}<span style="font-size:0.8rem;">/night</span></div>
                     <p class="room-card-desc">${details.description}</p>
                     <ul class="room-card-amenities">${details.amenities.map(a => `<li>${a}</li>`).join('')}</ul>
+                    <div class="room-count">🛏️ ${inventory[type]} rooms available</div>
                 </div>`;
             grid.appendChild(card);
             idx++;
