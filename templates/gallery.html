@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gallery | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
+        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+        section { padding: 8rem 2rem 4rem; max-width: 1300px; margin: 0 auto; }
+        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-bottom: 3rem; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .gallery-item { border-radius: 4px; overflow: hidden; height: 200px; background-size: cover; background-position: center; transition: transform 0.5s; cursor: pointer; }
+        .gallery-item:hover { transform: scale(1.05); }
+        /* Lightbox modal */
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1100; }
+        .lightbox img { max-width: 90%; max-height: 90%; border-radius: 4px; }
+        .close-btn { position: absolute; top: 20px; right: 40px; font-size: 3rem; color: #fff; cursor: pointer; }
+        footer { background: #1A1A1A; color: #ccc; padding: 2rem; text-align: center; margin-top: 4rem; }
+        footer a { color: #C4A962; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/gallery" class="active">Gallery</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/contact">Contact</a></li>
+            {% if user and user.email %}
+                {% if user.role == 'admin' %}
+                    <li><a href="/admin">Admin</a></li>
+                {% else %}
+                    <li><a href="/my-bookings">My Bookings</a></li>
+                    <li><a href="/rules">Rules</a></li>
+                {% endif %}
+                <li><a href="/logout">Logout</a></li>
+            {% else %}
+                <li><a href="/login">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <section>
+        <h2 class="section-title">Resort Gallery</h2>
+        <div class="gallery-grid" id="galleryGrid"></div>
+    </section>
+
+    <div class="lightbox" id="lightbox">
+        <span class="close-btn" onclick="document.getElementById('lightbox').style.display='none'">&times;</span>
+        <img id="lightboxImg" src="">
+    </div>
+
+    <footer>
+        <p>The Canyon Hotels & Resorts | 123 Canyon Ridge Road, Sedona, AZ 86336</p>
+        <p><a href="/contact">Contact</a> | <a href="/faq">FAQ</a> | <a href="/rules">Rules</a></p>
+        <p>© 2026 The Canyon. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const images = [
+            'https://images.pexels.com/photos/457882/pexels-photo-457882.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/261204/pexels-photo-261204.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/1579253/pexels-photo-1579253.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600',
+            'https://images.pexels.com/photos/271639/pexels-photo-271639.jpeg?auto=compress&cs=tinysrgb&w=600'
+        ];
+        const grid = document.getElementById('galleryGrid');
+        images.forEach(src => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.style.backgroundImage = `url('${src}')`;
+            div.onclick = () => {
+                document.getElementById('lightboxImg').src = src;
+                document.getElementById('lightbox').style.display = 'flex';
+            };
+            grid.appendChild(div);
+        });
+    </script>
+</body>
+</html>

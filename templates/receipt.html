@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; padding: 2rem; }
+        .receipt-container { max-width: 800px; margin: 2rem auto; background: white; padding: 3rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: #1E1E1E; }
+        .header p { color: #8B7355; font-size: 0.9rem; margin-top: 0.5rem; }
+        .details { margin-bottom: 2rem; }
+        .details h3 { color: #8B7355; font-size: 1.2rem; margin-bottom: 0.5rem; border-bottom: 1px solid #E0DCD3; padding-bottom: 0.3rem; }
+        .detail-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.95rem; }
+        .detail-row span:first-child { color: #555; }
+        .detail-row span:last-child { font-weight: 500; }
+        .total-row { font-size: 1.1rem; font-weight: 600; border-top: 1px solid #E0DCD3; padding-top: 0.5rem; margin-top: 0.5rem; }
+        .activity-list { margin: 1rem 0; }
+        .activity-item { display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 0.9rem; }
+        .footer { text-align: center; margin-top: 2rem; font-size: 0.8rem; color: #888; }
+        .btn { display: inline-block; margin-top: 1.5rem; background: #C4A962; color: white; padding: 0.8rem 2rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+        .btn:hover { background: #1A1A1A; }
+        @media print { .btn { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>THE CANYON</h1>
+            <p>Hotels & Resorts</p>
+            <p>123 Canyon Ridge Road, Sedona, AZ 86336</p>
+            <p>Receipt – Booking #{{ booking.id }}</p>
+        </div>
+
+        <div class="details">
+            <h3>Guest Information</h3>
+            <div class="detail-row"><span>Name</span><span>{{ booking.name }}</span></div>
+            <div class="detail-row"><span>Email</span><span>{{ booking.email }}</span></div>
+            <div class="detail-row"><span>Phone</span><span>{{ booking.phone }}</span></div>
+            <div class="detail-row"><span>Guests</span><span>{{ booking.guests }}</span></div>
+        </div>
+
+        <div class="details">
+            <h3>Stay Details</h3>
+            <div class="detail-row"><span>Room Type</span><span>{{ booking.room_type }}</span></div>
+            <div class="detail-row"><span>Room Number</span><span>{{ booking.room_number if booking.room_number else 'N/A' }}</span></div>
+            <div class="detail-row"><span>Check‑in</span><span>{{ booking.check_in }} at {{ booking.time }}</span></div>
+            <div class="detail-row"><span>Check‑out</span><span>{{ booking.check_out }} (12:00 PM)</span></div>
+            <div class="detail-row"><span>Status</span><span>{{ booking.status }}</span></div>
+        </div>
+
+        <div class="details">
+            <h3>Payment Breakdown</h3>
+            <div class="detail-row"><span>Room Rate (per night)</span><span>₱{{ '{:,.2f}'.format(room_types[booking.room_type]['price']) }}</span></div>
+            <div class="detail-row"><span>Total Nights</span><span>{{ nights }}</span></div>
+            {% if activities_details %}
+            <div class="activity-list">
+                <p style="font-weight:500; margin-top:0.5rem;">Activities:</p>
+                {% for act, price in activities_details.items() %}
+                <div class="activity-item"><span>{{ act }}</span><span>₱{{ '{:,.2f}'.format(price) }}</span></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="detail-row total-row"><span>Total Amount</span><span>₱{{ '{:,.2f}'.format(booking.total_price) }}</span></div>
+            <div class="detail-row" style="color:#2B5E2B;"><span>Downpayment (30%)</span><span>₱{{ '{:,.2f}'.format(booking.downpayment) }}</span></div>
+            <div class="detail-row" style="color:#A12B2B; font-weight:500;"><span>Balance Due at Check‑in</span><span>₱{{ '{:,.2f}'.format(booking.balance) }}</span></div>
+            <div class="detail-row"><span>Payment Method</span><span>{{ 'GCash' if booking.payment_method == 'gcash' else 'Credit/Debit Card' }}</span></div>
+        </div>
+
+        <div class="details">
+            <h3>Check‑in / Check‑out Log</h3>
+            <div class="detail-row"><span>Time‑In</span><span>{{ booking.time_in or 'Not recorded yet' }}</span></div>
+            <div class="detail-row"><span>Time‑Out</span><span>{{ booking.time_out or 'Not recorded yet' }}</span></div>
+        </div>
+
+        <div style="text-align:center;">
+            <a href="{{ url_for('my_bookings') if session.role == 'customer' else url_for('admin') }}" class="btn">Back</a>
+            <button onclick="window.print()" class="btn" style="margin-left:1rem;">Print Receipt</button>
+        </div>
+        <div class="footer">
+            <p>Thank you for choosing The Canyon!</p>
+        </div>
+    </div>
+</body>
+</html>

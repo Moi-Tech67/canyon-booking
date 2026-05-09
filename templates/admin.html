@@ -51,15 +51,17 @@
         <div class="stat-box"><h3 id="statActive">0</h3><p>Active</p></div>
         <div class="stat-box"><h3 id="statCancelled">0</h3><p>Cancelled</p></div>
         <div class="stat-box"><h3 id="statRevenue">₱0</h3><p>Revenue</p></div>
+        <div class="stat-box"><h3 id="statActRevenue">₱0</h3><p>Activities Revenue</p></div>
         <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg / Active</p></div>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th>
+                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th><th>Room No.</th>
                 <th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th>
-                <th>Price</th><th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
+                <th>Total</th><th>Deposit</th><th>Balance</th><th>Payment</th>
+                <th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
             </tr>
         </thead>
         <tbody id="bookingTable"></tbody>
@@ -106,6 +108,7 @@
             document.getElementById('statActive').textContent = d.active;
             document.getElementById('statCancelled').textContent = d.cancelled;
             document.getElementById('statRevenue').textContent = '₱' + d.revenue.toLocaleString();
+            document.getElementById('statActRevenue').textContent = '₱' + d.activities_revenue.toLocaleString();
             document.getElementById('statAvg').textContent = '₱' + d.average_per_active.toLocaleString();
         }
 
@@ -118,11 +121,11 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${b.phone}</td>
-                    <td>${b.room_type}</td><td>${b.check_in}</td><td>${b.check_out}</td>
-                    <td>${b.time}</td><td>${b.guests}</td><td>₱${b.total_price.toLocaleString()}</td>
-                    <td>${b.status}</td>
-                    <td>${b.time_in || '-'}</td>
-                    <td>${b.time_out || '-'}</td>
+                    <td>${b.room_type}</td><td>${b.room_number || '-'}</td>
+                    <td>${b.check_in}</td><td>${b.check_out}</td><td>${b.time}</td><td>${b.guests}</td>
+                    <td>₱${b.total_price.toLocaleString()}</td><td>₱${b.downpayment.toLocaleString()}</td>
+                    <td>₱${b.balance.toLocaleString()}</td><td>${b.payment_method}</td>
+                    <td>${b.status}</td><td>${b.time_in || '-'}</td><td>${b.time_out || '-'}</td>
                     <td class="actions">
                         <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
                         <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>

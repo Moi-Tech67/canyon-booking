@@ -5,12 +5,11 @@
     <title>Book Your Stay | The Canyon</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        /* same styles as before, unchanged */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
         nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
         .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
-        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
         .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: #C4A962; }
         section { padding: 8rem 2rem 4rem; max-width: 1200px; margin: 0 auto; }
@@ -26,6 +25,10 @@
         .price-amount { font-size: 2.5rem; font-weight: 400; color: #8B7355; font-family: 'Cormorant Garamond', serif; }
         .price-detail { font-size: 0.8rem; color: #6B6258; margin-top: 0.25rem; }
         .rooms-left { font-size: 0.9rem; color: #2B5E2B; font-weight: 500; margin-top: 0.5rem; }
+        .activities-section { margin-top: 1.5rem; padding: 1rem; border: 1px solid #E0DCD3; border-radius: 4px; }
+        .activities-section h3 { font-size: 1rem; color: #8B7355; margin-bottom: 1rem; }
+        .activity-checkbox { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .activity-checkbox input { width: auto; }
         .submit-btn { background: #C4A962; color: #fff; border: none; padding: 1rem 2rem; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; width: 100%; }
         .submit-btn:hover { background: #1A1A1A; }
         .submit-btn:disabled { background: #C8C2B8; cursor: not-allowed; }
@@ -36,8 +39,24 @@
         .loading.active { display: block; }
         .spinner { border: 2px solid #F5F2EB; border-top: 2px solid #C4A962; border-radius: 50%; width: 36px; height: 36px; animation: spin 0.8s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        footer { text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #E0DCD3; color: #9A9A9A; font-size: 0.8rem; }
-        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .form-group.full-width { grid-column: span 1; } }
+        footer { background: #1A1A1A; color: #ccc; padding: 2rem; text-align: center; margin-top: 4rem; }
+        footer a { color: #C4A962; text-decoration: none; }
+
+        /* Payment Modal */
+        #paymentModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 2.5rem; border-radius: 8px; max-width: 500px; width: 90%; text-align: center; }
+        .modal-content h3 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin-bottom: 1rem; color: #1E1E1E; }
+        .payment-method { display: flex; gap: 1rem; justify-content: center; margin-bottom: 1.5rem; }
+        .payment-method label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.8rem 1.2rem; border: 2px solid #E0DCD3; border-radius: 4px; transition: border-color 0.3s; }
+        .payment-method label.active { border-color: #C4A962; background: #F5F2EB; }
+        .payment-method input[type="radio"] { display: none; }
+        .payment-details { margin-bottom: 1.5rem; }
+        .payment-details input { width: 100%; padding: 0.8rem; margin-bottom: 0.8rem; border: 1px solid #ddd; font-family: inherit; }
+        .gcash-qr { margin: 1rem 0; }
+        .gcash-qr img { width: 150px; height: 150px; }
+        .modal-btn { background: #C4A962; color: white; border: none; padding: 0.8rem 2rem; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em; width: 100%; }
+        .modal-btn:hover { background: #1A1A1A; }
+        .balance-info { font-size: 0.9rem; color: #555; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -47,6 +66,8 @@
             <li><a href="/about">About</a></li>
             <li><a href="/accommodation">Rooms</a></li>
             <li><a href="/booking" class="active">Book</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/faq">FAQ</a></li>
             <li><a href="/contact">Contact</a></li>
             {% if user and user.email %}
                 {% if user.role == 'admin' %}
@@ -63,7 +84,7 @@
     </nav>
 
     <section>
-        <h2 class="section-title" style="font-family:'Cormorant Garamond',serif; font-size:2.8rem; font-weight:300; letter-spacing:0.2em; text-transform:uppercase; text-align:center; margin-bottom:3rem;">Reservations</h2>
+        <h2 style="font-family:'Cormorant Garamond',serif; font-size:2.8rem; font-weight:300; letter-spacing:0.2em; text-transform:uppercase; text-align:center; margin-bottom:3rem;">Reservations</h2>
         <div class="booking-form">
             <form id="bookingForm">
                 <div class="form-grid">
@@ -77,34 +98,103 @@
                     <div class="form-group"><label for="time">Check‑in Time *</label><input type="time" id="time" value="15:00" required></div>
                     <div class="form-group full-width"><label for="specialRequests">Special Requests (optional)</label><textarea id="specialRequests" rows="2"></textarea></div>
                 </div>
+
+                <div class="activities-section">
+                    <h3>Add Beach Activities (optional)</h3>
+                    <div id="activitiesList"></div>
+                </div>
+
                 <div class="price-display" id="priceDisplay">
                     <div class="price-label">Total Stay</div>
                     <div class="price-amount" id="totalPrice">₱0</div>
-                    <div class="price-detail"><span id="nightsCount">0</span> nights · ₱<span id="pricePerNight">0</span>/night</div>
+                    <div class="price-detail">
+                        <span id="nightsCount">0</span> nights · ₱<span id="pricePerNight">0</span>/night
+                        <span id="activitiesTotalSpan" style="display:none;"> + Activities: ₱<span id="activitiesTotal">0</span></span>
+                    </div>
                     <div class="rooms-left" id="roomsLeft"></div>
                 </div>
+
                 <div class="loading" id="loadingIndicator"><div class="spinner"></div><p style="margin-top:0.5rem; color:#8B7355;">Processing...</p></div>
                 <div class="message" id="message"></div>
                 <p style="font-size:0.8rem; color:#666; margin-top:1rem; text-align:center;">
                     By booking you agree to our <a href="/rules" target="_blank" style="color:#8B7355;">Rules & Regulations</a>.
                 </p>
-                <button type="submit" class="submit-btn" id="submitBtn">Confirm Booking</button>
+                <button type="button" class="submit-btn" id="submitBtn">Proceed to Payment</button>
             </form>
         </div>
     </section>
 
-    <footer>&copy; 2026 The Canyon Hotels & Resorts. All rights reserved.</footer>
+    <!-- Payment Modal -->
+    <div id="paymentModal">
+        <div class="modal-content">
+            <h3>Secure Payment</h3>
+            <p style="margin-bottom:1.2rem;">Total: <strong id="modalTotal">₱0</strong></p>
+            <p style="margin-bottom:0.5rem; font-size:0.9rem; color:#888;">Downpayment (30%): <strong id="modalDownpayment">₱0</strong></p>
+            <p style="margin-bottom:1.5rem; font-size:0.9rem; color:#888;">Balance due at check‑in: <strong id="modalBalance">₱0</strong></p>
+
+            <div class="payment-method">
+                <label class="active">
+                    <input type="radio" name="paymentMethod" value="card" checked>
+                    💳 Card
+                </label>
+                <label>
+                    <input type="radio" name="paymentMethod" value="gcash">
+                    📱 GCash
+                </label>
+            </div>
+
+            <div class="payment-details" id="cardDetails">
+                <input type="text" placeholder="Card Number" id="cardNumber" maxlength="19">
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" placeholder="MM/YY" id="expiry" style="width:50%;">
+                    <input type="text" placeholder="CVV" id="cvv" style="width:50%;">
+                </div>
+            </div>
+
+            <div class="payment-details" id="gcashDetails" style="display:none;">
+                <div class="gcash-qr">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3596/3596145.png" alt="GCash QR">
+                </div>
+                <input type="text" placeholder="GCash Reference Number">
+            </div>
+
+            <button class="modal-btn" id="payBtn">Pay Downpayment</button>
+            <button style="background: none; border: none; margin-top: 0.5rem; color: #888; cursor: pointer;" onclick="closePaymentModal()">Cancel</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>The Canyon Hotels & Resorts | 123 Canyon Ridge Road, Sedona, AZ 86336</p>
+        <p><a href="/contact">Contact</a> | <a href="/faq">FAQ</a> | <a href="/rules">Rules</a></p>
+        <p>© 2026 The Canyon. All rights reserved.</p>
+    </footer>
 
     <script>
         const roomTypes = {{ room_types | tojson | safe }};
+        const activities = {{ activities | tojson | safe }};
+
+        // Populate room dropdown
         const roomSelect = document.getElementById('roomType');
         for (const [type, details] of Object.entries(roomTypes)) {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = `${type} — ₱${details.price.toLocaleString()} / night`;
-            roomSelect.appendChild(option);
+            const opt = document.createElement('option');
+            opt.value = type;
+            opt.textContent = `${type} — ₱${details.price.toLocaleString()}/night`;
+            roomSelect.appendChild(opt);
         }
 
+        // Populate activities
+        const activitiesDiv = document.getElementById('activitiesList');
+        for (const [name, price] of Object.entries(activities)) {
+            const div = document.createElement('div');
+            div.className = 'activity-checkbox';
+            div.innerHTML = `
+                <input type="checkbox" id="act_${name}" value="${name}" data-price="${price}">
+                <label for="act_${name}">${name} (₱${price.toLocaleString()})</label>
+            `;
+            activitiesDiv.appendChild(div);
+        }
+
+        // Set default dates
         (function setDefaultDates() {
             const today = new Date();
             const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
@@ -119,7 +209,13 @@
         ['checkIn','checkOut','roomType','guests','time'].forEach(id => {
             document.getElementById(id).addEventListener('change', checkAvailability);
         });
-        document.getElementById('bookingForm').addEventListener('submit', handleBookingSubmit);
+        document.querySelectorAll('#activitiesList input[type=checkbox]').forEach(cb => {
+            cb.addEventListener('change', checkAvailability);
+        });
+
+        let currentGrandTotal = 0;
+        let currentDownpayment = 0;
+        let currentBalance = 0;
 
         async function checkAvailability() {
             const checkIn = document.getElementById('checkIn').value;
@@ -133,16 +229,29 @@
                 hidePrice();
                 return;
             }
+            const checkboxes = document.querySelectorAll('#activitiesList input[type=checkbox]:checked');
+            const selectedActivities = Array.from(checkboxes).map(cb => cb.value);
+
             document.getElementById('loadingIndicator').classList.add('active');
             hideMessage();
             try {
                 const res = await fetch('/api/check_availability', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ check_in: checkIn, check_out: checkOut, room_type: roomType, guests: parseInt(guests), time })
+                    body: JSON.stringify({
+                        check_in: checkIn,
+                        check_out: checkOut,
+                        room_type: roomType,
+                        guests: parseInt(guests),
+                        time,
+                        activities: selectedActivities
+                    })
                 });
                 const data = await res.json();
                 if (data.available) {
+                    currentGrandTotal = data.total_price;
+                    currentDownpayment = Math.round(currentGrandTotal * 0.30 * 100) / 100;
+                    currentBalance = Math.round((currentGrandTotal - currentDownpayment) * 100) / 100;
                     displayPrice(data);
                     hideMessage();
                 } else {
@@ -162,8 +271,15 @@
             document.getElementById('totalPrice').textContent = '₱' + data.total_price.toLocaleString();
             document.getElementById('nightsCount').textContent = data.nights;
             document.getElementById('pricePerNight').textContent = data.price_per_night.toLocaleString();
-            const roomsLeftEl = document.getElementById('roomsLeft');
-            roomsLeftEl.textContent = `🛏️ ${data.rooms_left} room(s) left for this type on these dates`;
+            document.getElementById('roomsLeft').textContent = `🛏️ ${data.rooms_left} room(s) left`;
+            const actSpan = document.getElementById('activitiesTotalSpan');
+            const actPrice = document.getElementById('activitiesTotal');
+            if (data.activities_total > 0) {
+                actSpan.style.display = 'inline';
+                actPrice.textContent = data.activities_total.toLocaleString();
+            } else {
+                actSpan.style.display = 'none';
+            }
         }
         function hidePrice() { document.getElementById('priceDisplay').style.display = 'none'; }
         function showMessage(text, type) {
@@ -177,17 +293,58 @@
             msg.textContent = '';
         }
 
-        async function handleBookingSubmit(e) {
+        // Payment modal logic
+        const paymentModal = document.getElementById('paymentModal');
+        document.getElementById('submitBtn').addEventListener('click', (e) => {
             e.preventDefault();
-            const checkIn = document.getElementById('checkIn').value;
-            const checkOut = document.getElementById('checkOut').value;
-            if (new Date(checkOut) <= new Date(checkIn)) {
-                showMessage('Check‑out date must be after check‑in', 'error');
+            if (!document.getElementById('name').value || !document.getElementById('email').value ||
+                !document.getElementById('phone').value || !document.getElementById('roomType').value) {
+                showMessage('Please fill all required fields.', 'error');
                 return;
             }
+            if (currentGrandTotal <= 0) {
+                showMessage('Please check availability first.', 'error');
+                return;
+            }
+            document.getElementById('modalTotal').textContent = '₱' + currentGrandTotal.toLocaleString();
+            document.getElementById('modalDownpayment').textContent = '₱' + currentDownpayment.toLocaleString();
+            document.getElementById('modalBalance').textContent = '₱' + currentBalance.toLocaleString();
+            paymentModal.style.display = 'flex';
+        });
+
+        function closePaymentModal() {
+            paymentModal.style.display = 'none';
+        }
+
+        const cardRadio = document.querySelector('input[value="card"]');
+        const gcashRadio = document.querySelector('input[value="gcash"]');
+        const cardDetails = document.getElementById('cardDetails');
+        const gcashDetails = document.getElementById('gcashDetails');
+        const paymentLabels = document.querySelectorAll('.payment-method label');
+
+        cardRadio.addEventListener('change', () => {
+            cardDetails.style.display = 'block';
+            gcashDetails.style.display = 'none';
+            paymentLabels.forEach(l => l.classList.remove('active'));
+            cardRadio.parentElement.classList.add('active');
+        });
+        gcashRadio.addEventListener('change', () => {
+            cardDetails.style.display = 'none';
+            gcashDetails.style.display = 'block';
+            paymentLabels.forEach(l => l.classList.remove('active'));
+            gcashRadio.parentElement.classList.add('active');
+        });
+
+        document.getElementById('payBtn').addEventListener('click', async () => {
+            const checkIn = document.getElementById('checkIn').value;
+            const checkOut = document.getElementById('checkOut').value;
             const submitBtn = document.getElementById('submitBtn');
+            paymentModal.style.display = 'none';
             submitBtn.disabled = true;
             document.getElementById('loadingIndicator').classList.add('active');
+            const checkboxes = document.querySelectorAll('#activitiesList input[type=checkbox]:checked');
+            const selectedActivities = Array.from(checkboxes).map(cb => cb.value);
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
             const formData = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
@@ -197,7 +354,9 @@
                 check_out: checkOut,
                 time: document.getElementById('time').value,
                 guests: parseInt(document.getElementById('guests').value),
-                special_requests: document.getElementById('specialRequests').value
+                special_requests: document.getElementById('specialRequests').value,
+                activities: selectedActivities,
+                payment_method: paymentMethod
             };
             try {
                 const res = await fetch('/api/create_booking', {
@@ -207,15 +366,16 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showMessage(`Reservation confirmed! Booking #${data.booking_id}. Total: ₱${data.total_price.toLocaleString()}`, 'success');
+                    showMessage(`Reservation confirmed! Booking #${data.booking_id}. Deposit: ₱${data.downpayment.toLocaleString()}`, 'success');
                     document.getElementById('bookingForm').reset();
-                    (function resetDates() {
+                    (function resetDefaults() {
                         const today = new Date();
                         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
                         const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate()+7);
                         document.getElementById('checkIn').value = tomorrow.toISOString().split('T')[0];
                         document.getElementById('checkOut').value = nextWeek.toISOString().split('T')[0];
                         document.getElementById('time').value = '15:00';
+                        document.querySelectorAll('#activitiesList input[type=checkbox]').forEach(cb => cb.checked = false);
                     })();
                     hidePrice();
                     setTimeout(() => { window.location.href = '/booking-confirmation'; }, 2500);
@@ -228,7 +388,7 @@
                 submitBtn.disabled = false;
                 document.getElementById('loadingIndicator').classList.remove('active');
             }
-        }
+        });
     </script>
 </body>
 </html>

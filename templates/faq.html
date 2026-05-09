@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FAQ | The Canyon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
+        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+        section { padding: 8rem 2rem 4rem; max-width: 900px; margin: 0 auto; }
+        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-bottom: 3rem; }
+        .faq-item { background: white; padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #C4A962; }
+        .faq-item h3 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #8B7355; }
+        .faq-item p { font-size: 0.95rem; line-height: 1.6; color: #555; }
+        footer { background: #1A1A1A; color: #ccc; padding: 2rem; text-align: center; margin-top: 4rem; }
+        footer a { color: #C4A962; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking">Book</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/faq" class="active">FAQ</a></li>
+            <li><a href="/contact">Contact</a></li>
+            {% if user and user.email %}
+                {% if user.role == 'admin' %}
+                    <li><a href="/admin">Admin</a></li>
+                {% else %}
+                    <li><a href="/my-bookings">My Bookings</a></li>
+                    <li><a href="/rules">Rules</a></li>
+                {% endif %}
+                <li><a href="/logout">Logout</a></li>
+            {% else %}
+                <li><a href="/login">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <section>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div class="faq-item">
+            <h3>What time is check‑in and check‑out?</h3>
+            <p>Check‑in starts at 3:00 PM and check‑out is until 12:00 noon. Early check‑in or late check‑out may be available upon request.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Can I cancel my booking?</h3>
+            <p>You can cancel your booking before the check‑in time (before the QR code is scanned). Once checked in, cancellations are no longer possible.</p>
+        </div>
+        <div class="faq-item">
+            <h3>How do I pay?</h3>
+            <p>Payment is made at the resort upon check‑in. We accept cash, credit/debit cards, and selected e‑wallets.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Are beach activities included in the room rate?</h3>
+            <p>Beach activities are optional add‑ons and are charged separately. You can select them during the booking process.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Is the QR code mandatory?</h3>
+            <p>Yes, the QR code is used for contactless check‑in and check‑out. Please present it at the front desk upon arrival.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>The Canyon Hotels & Resorts | 123 Canyon Ridge Road, Sedona, AZ 86336</p>
+        <p><a href="/contact">Contact</a> | <a href="/faq">FAQ</a> | <a href="/rules">Rules</a></p>
+        <p>© 2026 The Canyon. All rights reserved.</p>
+    </footer>
+</body>
+</html>

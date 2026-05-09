@@ -47,7 +47,6 @@ ROOM_TYPES = {
     }
 }
 
-# Total rooms available for each type
 ROOM_INVENTORY = {
     'Deluxe Canyon View': 20,
     'Premium Suite': 15,
@@ -56,10 +55,28 @@ ROOM_INVENTORY = {
     'Family Suite': 10
 }
 
+ROOM_PREFIX = {
+    'Deluxe Canyon View': 'DC',
+    'Premium Suite': 'PS',
+    'Presidential Suite': 'PR',
+    'Standard Room': 'SR',
+    'Family Suite': 'FS'
+}
+
+ACTIVITIES = {
+    'Snorkeling': 500,
+    'Kayaking': 400,
+    'Sunset Cruise': 1200,
+    'Jet Ski': 1500,
+    'Beach Volleyball': 200,
+    'Paddleboarding': 600
+}
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
+    # Users table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -68,6 +85,24 @@ def init_db():
         role TEXT NOT NULL CHECK(role IN ('admin','customer'))
     )''')
 
+    # Rooms table (individual rooms)
+    c.execute('''CREATE TABLE IF NOT EXISTS rooms (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_number TEXT UNIQUE NOT NULL,
+        room_type TEXT NOT NULL
+    )''')
+
+    # Pre‑populate rooms if empty
+    c.execute("SELECT COUNT(*) FROM rooms")
+    if c.fetchone()[0] == 0:
+        for room_type, count in ROOM_INVENTORY.items():
+            prefix = ROOM_PREFIX[room_type]
+            for i in range(1, count + 1):
+                room_number = f"{prefix}-{i:02d}"
+                c.execute("INSERT INTO rooms (room_number, room_type) VALUES (?, ?)",
+                          (room_number, room_type))
+
+    # Bookings table – full schema with downpayment and room number
     c.execute('''CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -81,6 +116,11 @@ def init_db():
         guests INTEGER NOT NULL DEFAULT 1,
         special_requests TEXT,
         total_price REAL NOT NULL,
+        downpayment REAL NOT NULL DEFAULT 0,
+        balance REAL NOT NULL DEFAULT 0,
+        payment_method TEXT DEFAULT '',
+        activities TEXT DEFAULT '',
+        room_number TEXT,
         booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status TEXT DEFAULT 'active',
         time_in TEXT,
@@ -88,7 +128,7 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # Pre-create accounts if none exist
+    # Pre‑create accounts if none exist
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -128,35 +168,44 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# Philippine time helper
 def ph_now():
     return (datetime.utcnow() + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
 
-# Count overlapping active bookings for a room type and date range
-def get_available_rooms(room_type, check_in, check_out, exclude_id=None):
+def assign_room(room_type, check_in, check_out):
     conn = get_db()
-    query = '''SELECT COUNT(*) FROM bookings
-               WHERE room_type = ?
-                 AND status = 'active'
-                 AND check_in < ?
-                 AND check_out > ?'''
-    params = [room_type, check_out, check_in]
-    if exclude_id:
-        query += ' AND id != ?'
-        params.append(exclude_id)
-    used = conn.execute(query, params).fetchone()[0]
+    rooms = conn.execute("SELECT room_number FROM rooms WHERE room_type = ?", (room_type,)).fetchall()
+    if not rooms:
+        conn.close()
+        return None
+    room_numbers = [r['room_number'] for r in rooms]
+    placeholders = ','.join('?' for _ in room_numbers)
+    query = f'''SELECT DISTINCT room_number FROM bookings
+                WHERE room_number IN ({placeholders})
+                  AND status = 'active'
+                  AND check_in < ?
+                  AND check_out > ?'''
+    params = room_numbers + [check_out, check_in]
+    used_rooms = {row['room_number'] for row in conn.execute(query, params).fetchall()}
     conn.close()
-    total = ROOM_INVENTORY.get(room_type, 0)
-    return max(0, total - used)
+    for rn in room_numbers:
+        if rn not in used_rooms:
+            return rn
+    return None
 
-# ---------- Public routes ----------
+def calculate_nights(check_in, check_out):
+    fmt = "%Y-%m-%d"
+    d1 = datetime.strptime(check_in, fmt)
+    d2 = datetime.strptime(check_out, fmt)
+    return (d2 - d1).days
+
+# --- Public routes ---
 @app.route('/')
 def index():
     return render_template('index.html', user=session)
 
 @app.route('/accommodation')
 def accommodation():
-    return render_template('accommodation.html', room_types=ROOM_TYPES, inventory=ROOM_INVENTORY, user=session)
+    return render_template('accommodation.html', room_types=ROOM_TYPES, inventory=ROOM_INVENTORY, activities=ACTIVITIES, user=session)
 
 @app.route('/about')
 def about():
@@ -166,6 +215,14 @@ def about():
 def contact():
     return render_template('contact.html', user=session)
 
+@app.route('/gallery')
+def gallery():
+    return render_template('gallery.html', user=session)
+
+@app.route('/faq')
+def faq():
+    return render_template('faq.html', user=session)
+
 @app.route('/rules')
 @login_required
 def rules():
@@ -174,7 +231,7 @@ def rules():
         return redirect(url_for('admin') if session.get('role') == 'admin' else url_for('index'))
     return render_template('rules.html', user=session)
 
-# ---------- Authentication ----------
+# --- Authentication ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -231,14 +288,14 @@ def register():
             return render_template('register.html')
     return render_template('register.html')
 
-# ---------- Booking (customer only) ----------
+# --- Booking (customer) ---
 @app.route('/booking')
 @login_required
 def booking_page():
     if session.get('role') == 'admin':
         flash('Admins cannot book appointments.', 'error')
         return redirect(url_for('admin'))
-    return render_template('booking.html', room_types=ROOM_TYPES, user=session)
+    return render_template('booking.html', room_types=ROOM_TYPES, activities=ACTIVITIES, user=session)
 
 @app.route('/api/check_availability', methods=['POST'])
 @login_required
@@ -250,26 +307,46 @@ def check_availability():
     check_out = data['check_out']
     room_type = data['room_type']
     guests = int(data.get('guests', 1))
-    # time slot not used for inventory, but we'll keep it for info
-    time_slot = data.get('time', '12:00')
 
     if datetime.strptime(check_out, "%Y-%m-%d") <= datetime.strptime(check_in, "%Y-%m-%d"):
         return jsonify({'available': False, 'message': 'Check‑out must be after check‑in.'})
 
     nights = calculate_nights(check_in, check_out)
     price_per_night = ROOM_TYPES[room_type]['price']
-    total = price_per_night * nights
+    total_room = price_per_night * nights
 
-    # Count available rooms for this date range
-    available_rooms = get_available_rooms(room_type, check_in, check_out)
-    if available_rooms <= 0:
+    # Check if a free room exists
+    available_room = assign_room(room_type, check_in, check_out)
+    if not available_room:
         return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
+
+    # Count available rooms for display
+    conn = get_db()
+    total_rooms = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type = ?", (room_type,)).fetchone()[0]
+    conn.close()
+    # Use full count of free rooms (this is approximate)
+    # We'll just use a simple count of used rooms to show availability
+    used_rooms = conn.execute('''SELECT COUNT(*) FROM bookings
+                                WHERE room_type = ? AND status = 'active'
+                                AND check_in < ? AND check_out > ?''',
+                              (room_type, check_out, check_in)).fetchone()[0]
+    available_count = max(0, total_rooms - used_rooms)
+
+    activities_total = 0
+    selected_activities = data.get('activities', [])
+    for act in selected_activities:
+        if act in ACTIVITIES:
+            activities_total += ACTIVITIES[act]
+
+    grand_total = total_room + activities_total
 
     return jsonify({
         'available': True,
-        'rooms_left': available_rooms,
+        'rooms_left': available_count,
         'price_per_night': price_per_night,
-        'total_price': total,
+        'room_total': total_room,
+        'activities_total': activities_total,
+        'total_price': grand_total,
         'nights': nights
     })
 
@@ -286,22 +363,49 @@ def create_booking():
         room_type = data['room_type']
         guests = int(data.get('guests', 1))
         nights = calculate_nights(check_in, check_out)
-        price = ROOM_TYPES[room_type]['price'] * nights
+        price_room = ROOM_TYPES[room_type]['price'] * nights
 
-        # Re-validate availability (with no exclusions)
-        if get_available_rooms(room_type, check_in, check_out) <= 0:
-            return jsonify({'success': False, 'message': 'The room type is already fully booked for these dates.'})
+        # Assign a specific room
+        room_number = assign_room(room_type, check_in, check_out)
+        if not room_number:
+            return jsonify({'success': False, 'message': 'No rooms available for the selected dates.'})
+
+        selected_activities = data.get('activities', [])
+        activities_total = 0
+        for act in selected_activities:
+            if act in ACTIVITIES:
+                activities_total += ACTIVITIES[act]
+
+        grand_total = price_room + activities_total
+
+        # Downpayment calculation (30%)
+        DEPOSIT_RATE = 0.30
+        downpayment = round(grand_total * DEPOSIT_RATE, 2)
+        balance = round(grand_total - downpayment, 2)
+        payment_method = data.get('payment_method', 'card')
+        if payment_method not in ['gcash', 'card']:
+            payment_method = 'card'
 
         conn = get_db()
         conn.execute('''INSERT INTO bookings 
-            (user_id, name, email, phone, room_type, check_in, check_out, time, guests, special_requests, total_price)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+            (user_id, name, email, phone, room_type, check_in, check_out, time, guests,
+             special_requests, total_price, downpayment, balance, payment_method, activities, room_number)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
             (session['user_id'], data['name'], data['email'], data['phone'], room_type,
-             check_in, check_out, time_slot, guests, data.get('special_requests', ''), price))
+             check_in, check_out, time_slot, guests,
+             data.get('special_requests', ''), grand_total, downpayment, balance, payment_method,
+             ','.join(selected_activities), room_number))
         conn.commit()
         booking_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.close()
-        return jsonify({'success': True, 'booking_id': booking_id, 'total_price': price, 'message': 'Booking confirmed!'})
+        return jsonify({
+            'success': True,
+            'booking_id': booking_id,
+            'total_price': grand_total,
+            'downpayment': downpayment,
+            'balance': balance,
+            'message': 'Booking confirmed!'
+        })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -318,7 +422,26 @@ def my_bookings():
     conn.close()
     return render_template('my_bookings.html', bookings=bookings, user=session)
 
-# ---------- QR Code ----------
+# --- Receipt ---
+@app.route('/receipt/<int:booking_id>')
+@login_required
+def receipt(booking_id):
+    conn = get_db()
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    conn.close()
+    if not booking:
+        flash('Booking not found.', 'error')
+        return redirect(url_for('my_bookings') if session['role'] == 'customer' else url_for('admin'))
+    if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('my_bookings') if session['role'] == 'customer' else url_for('admin'))
+    activities_list = [a.strip() for a in booking['activities'].split(',') if a.strip()]
+    activities_details = {a: ACTIVITIES.get(a, 0) for a in activities_list}
+    nights = calculate_nights(booking['check_in'], booking['check_out'])
+    return render_template('receipt.html', booking=booking, activities_details=activities_details,
+                           user=session, room_types=ROOM_TYPES, nights=nights)
+
+# --- QR Code ---
 @app.route('/booking/qr/<int:booking_id>')
 @login_required
 def booking_qr(booking_id):
@@ -329,7 +452,6 @@ def booking_qr(booking_id):
         return "Booking not found", 404
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         return "Unauthorized", 403
-
     qr_data = str(booking_id)
     img = qrcode.make(qr_data)
     buf = io.BytesIO()
@@ -337,7 +459,7 @@ def booking_qr(booking_id):
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
-# ---------- Admin: Scanner & Time Recording ----------
+# --- Admin Scanner & Time Recording ---
 @app.route('/scanner')
 @admin_required
 def scanner():
@@ -384,7 +506,7 @@ def record_time_out():
     conn.close()
     return jsonify({'success': True, 'time_out': now, 'message': 'Time‑out recorded.'})
 
-# ---------- Admin Dashboard ----------
+# --- Admin Dashboard ---
 @app.route('/admin')
 @admin_required
 def admin():
@@ -408,16 +530,12 @@ def cancel_booking():
     if not booking:
         conn.close()
         return jsonify({'success': False, 'message': 'Booking not found.'})
-
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         conn.close()
         return jsonify({'success': False, 'message': 'Unauthorized.'}), 403
-
-    # Block cancellation if already checked in (time_in exists)
     if booking['time_in']:
         conn.close()
         return jsonify({'success': False, 'message': 'Booking cannot be cancelled after check‑in.'})
-
     conn.execute("UPDATE bookings SET status='cancelled' WHERE id=?", (booking_id,))
     conn.commit()
     conn.close()
@@ -438,13 +556,15 @@ def edit_booking():
     new_check_in = data.get('check_in')
     new_check_out = data.get('check_out')
     if new_room and new_check_in and new_check_out:
-        avail = get_available_rooms(new_room, new_check_in, new_check_out, exclude_id=booking_id)
-        if avail <= 0:
-            conn.close()
-            return jsonify({'success': False, 'message': 'No rooms available for the new selection.'})
+        if new_room != booking['room_type']:
+            new_room_number = assign_room(new_room, new_check_in, new_check_out)
+            if not new_room_number:
+                conn.close()
+                return jsonify({'success': False, 'message': 'No rooms available for the new selection.'})
+            data['room_number'] = new_room_number
 
     updates = {}
-    for field in ['name', 'email', 'phone', 'room_type', 'check_in', 'check_out', 'time', 'guests', 'special_requests']:
+    for field in ['name', 'email', 'phone', 'room_type', 'check_in', 'check_out', 'time', 'guests', 'special_requests', 'activities', 'room_number']:
         if field in data:
             updates[field] = data[field]
 
@@ -452,11 +572,22 @@ def edit_booking():
     final_check_out = updates.get('check_out', booking['check_out'])
     final_room = updates.get('room_type', booking['room_type'])
     nights = calculate_nights(final_check_in, final_check_out)
-    final_price = ROOM_TYPES[final_room]['price'] * nights
+    price_room = ROOM_TYPES[final_room]['price'] * nights
+
+    activities_str = updates.get('activities', booking['activities'])
+    act_list = [a.strip() for a in activities_str.split(',') if a.strip()]
+    act_total = sum(ACTIVITIES.get(a, 0) for a in act_list)
+    final_price = price_room + act_total
+
+    # Re‑calculate downpayment and balance if price changed
+    DEPOSIT_RATE = 0.30
+    downpayment = round(final_price * DEPOSIT_RATE, 2)
+    balance = round(final_price - downpayment, 2)
+    updates['downpayment'] = downpayment
+    updates['balance'] = balance
 
     set_clause = ", ".join(f"{k}=?" for k in updates)
     values = list(updates.values())
-    values.append(final_price)
     values.append(booking_id)
 
     conn.execute(f"UPDATE bookings SET {set_clause}, total_price=? WHERE id=?", values)
@@ -473,12 +604,20 @@ def stats():
     cancelled = conn.execute("SELECT COUNT(*) FROM bookings WHERE status='cancelled'").fetchone()[0]
     revenue = conn.execute("SELECT COALESCE(SUM(total_price),0) FROM bookings WHERE status='active'").fetchone()[0]
     avg_price = round(revenue / active, 2) if active > 0 else 0
+    act_revenue = 0
+    rows = conn.execute("SELECT activities FROM bookings WHERE status='active' AND activities != ''").fetchall()
+    for r in rows:
+        for a in r['activities'].split(','):
+            a = a.strip()
+            if a in ACTIVITIES:
+                act_revenue += ACTIVITIES[a]
     conn.close()
     return jsonify({
         'total': total,
         'active': active,
         'cancelled': cancelled,
         'revenue': revenue,
+        'activities_revenue': act_revenue,
         'average_per_active': avg_price
     })
 
@@ -487,13 +626,7 @@ def stats():
 def booking_confirmation():
     return render_template('confirmation.html', user=session)
 
-def calculate_nights(check_in, check_out):
-    fmt = "%Y-%m-%d"
-    d1 = datetime.strptime(check_in, fmt)
-    d2 = datetime.strptime(check_out, fmt)
-    return (d2 - d1).days
-
-# --- Call init_db at module level (for Render) ---
+# --- Create tables on Render start ---
 init_db()
 
 if __name__ == '__main__':

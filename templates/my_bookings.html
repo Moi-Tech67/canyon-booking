@@ -17,7 +17,7 @@
         th { background: #C4A962; color: white; text-transform: uppercase; }
         .status-cancelled { color: #A12B2B; font-weight: bold; }
         .cancel-btn { background: #A12B2B; color: white; border: none; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.7rem; border-radius: 3px; }
-        .cancel-btn:hover { background: #8B0000; }
+        .receipt-btn { background: #8B7355; color: white; border: none; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.7rem; border-radius: 3px; text-decoration: none; }
         .qr-cell img { width: 80px; height: 80px; }
         .message { padding: 1rem; margin: 1rem 0; display: none; }
         .message.success { background: #E6F0E6; color: #2B5E2B; display: block; }
@@ -42,18 +42,24 @@
     {% if bookings %}
     <table>
         <tr>
-            <th>ID</th><th>Room</th><th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th><th>Price</th><th>Status</th>
-            <th>Time‑In</th><th>Time‑Out</th><th>QR Code</th><th>Action</th>
+            <th>ID</th><th>Room</th><th>Room No.</th><th>Check‑in</th><th>Check‑out</th><th>Time</th>
+            <th>Guests</th><th>Total</th><th>Deposit</th><th>Balance</th>
+            <th>Payment</th><th>Status</th><th>Time‑In</th><th>Time‑Out</th>
+            <th>QR Code</th><th>Actions</th>
         </tr>
         {% for b in bookings %}
         <tr id="row-{{ b.id }}">
             <td>{{ b.id }}</td>
             <td>{{ b.room_type }}</td>
+            <td>{{ b.room_number if b.room_number else '-' }}</td>
             <td>{{ b.check_in }}</td>
             <td>{{ b.check_out }}</td>
             <td>{{ b.time }}</td>
             <td>{{ b.guests }}</td>
             <td>₱{{ '{:,.2f}'.format(b.total_price) }}</td>
+            <td>₱{{ '{:,.2f}'.format(b.downpayment) }}</td>
+            <td>₱{{ '{:,.2f}'.format(b.balance) }}</td>
+            <td>{{ b.payment_method }}</td>
             <td class="{{ 'status-cancelled' if b.status=='cancelled' }}">{{ b.status }}</td>
             <td>{{ b.time_in or '-' }}</td>
             <td>{{ b.time_out or '-' }}</td>
@@ -65,6 +71,7 @@
                 {% endif %}
             </td>
             <td>
+                <a href="{{ url_for('receipt', booking_id=b.id) }}" class="receipt-btn">Receipt</a>
                 {% if b.status == 'active' and not b.time_in %}
                 <button class="cancel-btn" onclick="cancelBooking({{ b.id }})">Cancel</button>
                 {% endif %}
@@ -91,9 +98,8 @@
                 msg.textContent = 'Cancelled.';
                 const row = document.getElementById('row-' + bookingId);
                 if (row) {
-                    row.querySelector('td:nth-child(8)').textContent = 'cancelled';
-                    row.querySelector('td:nth-child(8)').classList.add('status-cancelled');
-                    row.querySelector('td:nth-child(12)').innerHTML = ''; // remove cancel button
+                    row.querySelector('td:nth-child(12)').textContent = 'cancelled';
+                    row.querySelector('td:nth-child(12)').classList.add('status-cancelled');
                 }
             } else {
                 msg.className = 'message error';
