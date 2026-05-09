@@ -16,31 +16,31 @@ DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
-        'price': 350,
+        'price': 5000,
         'capacity': 2,
         'description': 'Spacious room with breathtaking canyon views, king-size bed, and private balcony.',
         'amenities': ['King Bed', 'Balcony', 'Pool Access', 'Free WiFi', 'Room Service']
     },
     'Premium Suite': {
-        'price': 550,
+        'price': 10000,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
         'amenities': ['2 Bedrooms', 'Living Room', 'Pool Access', 'Fireplace', 'Butler Service']
     },
     'Presidential Suite': {
-        'price': 1200,
+        'price': 15000,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
         'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Kids Area Access', 'Helicopter Pad Access']
     },
     'Standard Room': {
-        'price': 200,
+        'price': 2000,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
         'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Kids Area Access', 'Pool Access']
     },
     'Family Suite': {
-        'price': 450,
+        'price': 7000,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
         'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area Access', 'Free Wifi', 'Pool Access']
