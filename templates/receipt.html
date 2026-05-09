@@ -22,6 +22,10 @@
         .footer { text-align: center; margin-top: 2rem; font-size: 0.8rem; color: #888; }
         .btn { display: inline-block; margin-top: 1.5rem; background: #C4A962; color: white; padding: 0.8rem 2rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
         .btn:hover { background: #1A1A1A; }
+        .qr-section { text-align: center; margin: 2rem 0; }
+        .qr-section img { width: 200px; height: 200px; border: 2px solid #C4A962; padding: 0.5rem; border-radius: 4px; background: white; }
+        .paid-stamp { color: #2E8B57; font-weight: 600; font-size: 1.1rem; margin: 1rem 0; }
+        .balance-due { color: #A12B2B; font-weight: 500; }
         @media print { .btn { display: none; } }
     </style>
 </head>
@@ -32,6 +36,18 @@
             <p>Hotels & Resorts</p>
             <p>123 Canyon Ridge Road, Sedona, AZ 86336</p>
             <p>Receipt – Booking #{{ booking.id }}</p>
+            {% if booking.paid %}
+                <p class="paid-stamp">✔️ FULLY PAID</p>
+            {% else %}
+                <p class="balance-due">Balance Due: ₱{{ '{:,.2f}'.format(booking.balance) }}</p>
+            {% endif %}
+        </div>
+
+        <!-- QR Code for check-in/out – guaranteed to appear -->
+        <div class="qr-section">
+            <p style="margin-bottom:0.5rem; font-weight:500;">Present this QR at check‑in and check‑out</p>
+            <img src="{{ url_for('booking_qr', booking_id=booking.id) }}" alt="QR Code" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <p style="display:none; color:red;">QR code could not be loaded. Please ensure you are logged in.</p>
         </div>
 
         <div class="details">
@@ -65,7 +81,11 @@
             {% endif %}
             <div class="detail-row total-row"><span>Total Amount</span><span>₱{{ '{:,.2f}'.format(booking.total_price) }}</span></div>
             <div class="detail-row" style="color:#2B5E2B;"><span>Downpayment (30%)</span><span>₱{{ '{:,.2f}'.format(booking.downpayment) }}</span></div>
-            <div class="detail-row" style="color:#A12B2B; font-weight:500;"><span>Balance Due at Check‑in</span><span>₱{{ '{:,.2f}'.format(booking.balance) }}</span></div>
+            {% if booking.paid %}
+                <div class="detail-row" style="color:#2E8B57; font-weight:600;"><span>Remaining Balance</span><span>₱0.00 (Fully Paid)</span></div>
+            {% else %}
+                <div class="detail-row" style="color:#A12B2B; font-weight:500;"><span>Balance Due at Check‑in</span><span>₱{{ '{:,.2f}'.format(booking.balance) }}</span></div>
+            {% endif %}
             <div class="detail-row"><span>Payment Method</span><span>{{ 'GCash' if booking.payment_method == 'gcash' else 'Credit/Debit Card' }}</span></div>
         </div>
 
