@@ -16,34 +16,34 @@ DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
-        'price': 5000,
+        'price': 350,
         'capacity': 2,
         'description': 'Spacious room with breathtaking canyon views, king-size bed, and private balcony.',
-        'amenities': ['King Bed', 'Balcony', 'Pool Access', 'Free WiFi', 'Room Service']
+        'amenities': ['King Bed', 'Private Balcony', 'Mini Bar', 'Free WiFi', 'Room Service']
     },
     'Premium Suite': {
-        'price': 10000,
+        'price': 550,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
-        'amenities': ['2 Bedrooms', 'Living Room', 'Pool Access', 'Fireplace', 'Butler Service']
+        'amenities': ['2 Bedrooms', 'Living Room', 'Jacuzzi', 'Fireplace', 'Butler Service']
     },
     'Presidential Suite': {
-        'price': 15000,
+        'price': 1200,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
-        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Kids Area Access', 'Helicopter Pad Access']
+        'amenities': ['3 Bedrooms', 'Private Pool', 'Butler Service', 'Wine Cellar', 'Helicopter Pad Access']
     },
     'Standard Room': {
-        'price': 2000,
+        'price': 200,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
-        'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Kids Area Access', 'Pool Access']
+        'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Coffee Maker', 'Safe Box']
     },
     'Family Suite': {
-        'price': 7000,
+        'price': 450,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
-        'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area Access', 'Free Wifi', 'Pool Access']
+        'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area', 'Game Console', 'Laundry']
     }
 }
 
@@ -85,14 +85,14 @@ def init_db():
         role TEXT NOT NULL CHECK(role IN ('admin','customer'))
     )''')
 
-    # Rooms table (individual rooms)
+    # Rooms table
     c.execute('''CREATE TABLE IF NOT EXISTS rooms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         room_number TEXT UNIQUE NOT NULL,
         room_type TEXT NOT NULL
     )''')
 
-    # Pre‑populate rooms if empty
+    # Pre‑populate rooms
     c.execute("SELECT COUNT(*) FROM rooms")
     if c.fetchone()[0] == 0:
         for room_type, count in ROOM_INVENTORY.items():
@@ -102,7 +102,7 @@ def init_db():
                 c.execute("INSERT INTO rooms (room_number, room_type) VALUES (?, ?)",
                           (room_number, room_type))
 
-    # Bookings table – full schema with downpayment and room number
+    # Bookings table
     c.execute('''CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -128,7 +128,7 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # Pre‑create accounts if none exist
+    # Pre‑create accounts
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -198,7 +198,7 @@ def calculate_nights(check_in, check_out):
     d2 = datetime.strptime(check_out, fmt)
     return (d2 - d1).days
 
-# --- Public routes ---
+# ------------------ Public pages ------------------
 @app.route('/')
 def index():
     return render_template('index.html', user=session)
@@ -231,7 +231,7 @@ def rules():
         return redirect(url_for('admin') if session.get('role') == 'admin' else url_for('index'))
     return render_template('rules.html', user=session)
 
-# --- Authentication ---
+# ------------------ Authentication ------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -288,7 +288,7 @@ def register():
             return render_template('register.html')
     return render_template('register.html')
 
-# --- Booking (customer) ---
+# ------------------ Booking (customer) ------------------
 @app.route('/booking')
 @login_required
 def booking_page():
@@ -320,30 +320,7 @@ def check_availability():
     if not available_room:
         return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
 
-   @app.route('/api/check_availability', methods=['POST'])
-@login_required
-def check_availability():
-    if session.get('role') != 'customer':
-        return jsonify({'available': False, 'message': 'Only customers can check availability.'})
-    data = request.json
-    check_in = data['check_in']
-    check_out = data['check_out']
-    room_type = data['room_type']
-    guests = int(data.get('guests', 1))
-
-    if datetime.strptime(check_out, "%Y-%m-%d") <= datetime.strptime(check_in, "%Y-%m-%d"):
-        return jsonify({'available': False, 'message': 'Check‑out must be after check‑in.'})
-
-    nights = calculate_nights(check_in, check_out)
-    price_per_night = ROOM_TYPES[room_type]['price']
-    total_room = price_per_night * nights
-
-    # Check if a free room exists
-    available_room = assign_room(room_type, check_in, check_out)
-    if not available_room:
-        return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
-
-    # Count available rooms for display (keep connection open until both queries finish)
+    # Count available rooms for display
     conn = get_db()
     total_rooms = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type = ?", (room_type,)).fetchone()[0]
     used_rooms = conn.execute('''SELECT COUNT(*) FROM bookings
@@ -354,25 +331,6 @@ def check_availability():
     available_count = max(0, total_rooms - used_rooms)
 
     # Activities total
-    activities_total = 0
-    selected_activities = data.get('activities', [])
-    for act in selected_activities:
-        if act in ACTIVITIES:
-            activities_total += ACTIVITIES[act]
-
-    grand_total = total_room + activities_total
-
-    return jsonify({
-        'available': True,
-        'rooms_left': available_count,
-        'price_per_night': price_per_night,
-        'room_total': total_room,
-        'activities_total': activities_total,
-        'total_price': grand_total,
-        'nights': nights
-    })
-    available_count = max(0, total_rooms - used_rooms)
-
     activities_total = 0
     selected_activities = data.get('activities', [])
     for act in selected_activities:
@@ -419,7 +377,7 @@ def create_booking():
 
         grand_total = price_room + activities_total
 
-        # Downpayment calculation (30%)
+        # Downpayment
         DEPOSIT_RATE = 0.30
         downpayment = round(grand_total * DEPOSIT_RATE, 2)
         balance = round(grand_total - downpayment, 2)
@@ -450,6 +408,7 @@ def create_booking():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+# ------------------ My Bookings ------------------
 @app.route('/my-bookings')
 @login_required
 def my_bookings():
@@ -463,7 +422,7 @@ def my_bookings():
     conn.close()
     return render_template('my_bookings.html', bookings=bookings, user=session)
 
-# --- Receipt ---
+# ------------------ Receipt ------------------
 @app.route('/receipt/<int:booking_id>')
 @login_required
 def receipt(booking_id):
@@ -482,7 +441,7 @@ def receipt(booking_id):
     return render_template('receipt.html', booking=booking, activities_details=activities_details,
                            user=session, room_types=ROOM_TYPES, nights=nights)
 
-# --- QR Code ---
+# ------------------ QR Code ------------------
 @app.route('/booking/qr/<int:booking_id>')
 @login_required
 def booking_qr(booking_id):
@@ -500,7 +459,7 @@ def booking_qr(booking_id):
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
-# --- Admin Scanner & Time Recording ---
+# ------------------ Admin Scanner & Time Recording ------------------
 @app.route('/scanner')
 @admin_required
 def scanner():
@@ -547,7 +506,7 @@ def record_time_out():
     conn.close()
     return jsonify({'success': True, 'time_out': now, 'message': 'Time‑out recorded.'})
 
-# --- Admin Dashboard ---
+# ------------------ Admin Dashboard ------------------
 @app.route('/admin')
 @admin_required
 def admin():
@@ -620,7 +579,6 @@ def edit_booking():
     act_total = sum(ACTIVITIES.get(a, 0) for a in act_list)
     final_price = price_room + act_total
 
-    # Re‑calculate downpayment and balance if price changed
     DEPOSIT_RATE = 0.30
     downpayment = round(final_price * DEPOSIT_RATE, 2)
     balance = round(final_price - downpayment, 2)
@@ -667,7 +625,7 @@ def stats():
 def booking_confirmation():
     return render_template('confirmation.html', user=session)
 
-# --- Create tables on Render start ---
+# ------------------ Init DB on startup ------------------
 init_db()
 
 if __name__ == '__main__':
