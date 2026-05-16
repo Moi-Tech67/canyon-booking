@@ -9,7 +9,7 @@
         body { font-family: 'Montserrat', sans-serif; margin: 2rem; background: #F5F2EB; color: #1E1E1E; }
         nav { position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(26,26,26,0.95); }
         .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
-        .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; align-items: center; }
         .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: color 0.3s; }
         .nav-links a:hover, .nav-links a.active { color: #C4A962; }
 
@@ -18,8 +18,9 @@
         .dropdown-btn:hover { color: #C4A962; }
         .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: rgba(26,26,26,0.95); border-radius: 4px; min-width: 200px; padding: 0.5rem 0; list-style: none; z-index: 1001; }
         .account-dropdown:hover .dropdown-menu { display: block; }
-        .dropdown-menu li a { display: block; padding: 0.5rem 1.5rem; color: #fff; font-size: 0.8rem; text-transform: none; letter-spacing: 0.05em; text-decoration: none; white-space: nowrap; }
-        .dropdown-menu li a:hover { background: #C4A962; color: #1A1A1A; }
+        .dropdown-menu li { padding: 0.5rem 1.5rem; color: #fff; font-size: 0.8rem; }
+        .dropdown-menu li a { color: #C4A962; text-decoration: none; }
+        .dropdown-menu li a:hover { text-decoration: underline; }
 
         h1 { margin-top: 5rem; font-size: 2rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; }
         .stats { display: flex; gap: 1.5rem; margin: 2rem 0; flex-wrap: wrap; }
@@ -50,26 +51,27 @@
             <li><a href="/scanner">QR Scanner</a></li>
             {% if user and user.email %}
                 <li class="account-dropdown">
-                    <button class="dropdown-btn">Logout ▾</button>
-                    <ul class="dropdown-menu" id="accountList"></ul>
+                    <button class="dropdown-btn">{{ user.name }} ▾</button>
+                    <ul class="dropdown-menu">
+                        <li>{{ user.email }}</li>
+                        <li><a href="/logout">Logout</a></li>
+                    </ul>
                 </li>
             {% else %}
-                <li class="account-dropdown">
-                    <a href="/login" class="dropdown-btn">Login ▾</a>
-                    <ul class="dropdown-menu" id="accountList"></ul>
-                </li>
+                <li><a href="/login">Login</a></li>
             {% endif %}
         </ul>
     </nav>
 
     <h1>Admin Dashboard</h1>
+
     <div class="stats">
-        <div class="stat-box"><h3 id="statTotal">0</h3><p>Total</p></div>
+        <div class="stat-box"><h3 id="statTotal">0</h3><p>Total Bookings</p></div>
         <div class="stat-box"><h3 id="statActive">0</h3><p>Active</p></div>
         <div class="stat-box"><h3 id="statCancelled">0</h3><p>Cancelled</p></div>
         <div class="stat-box"><h3 id="statRevenue">₱0</h3><p>Revenue</p></div>
-        <div class="stat-box"><h3 id="statActRevenue">₱0</h3><p>Activities</p></div>
-        <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg</p></div>
+        <div class="stat-box"><h3 id="statActRevenue">₱0</h3><p>Activities Revenue</p></div>
+        <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg / Active</p></div>
     </div>
 
     <table>
@@ -146,16 +148,16 @@
             });
         }
 
-        function openEditModal(b) {
-            document.getElementById('edit_id').value = b.id;
-            document.getElementById('edit_name').value = b.name;
-            document.getElementById('edit_email').value = b.email;
-            document.getElementById('edit_phone').value = b.phone;
-            document.getElementById('edit_room_type').value = b.room_type;
-            document.getElementById('edit_check_in').value = b.check_in;
-            document.getElementById('edit_check_out').value = b.check_out;
-            document.getElementById('edit_time').value = b.time;
-            document.getElementById('edit_guests').value = b.guests;
+        function openEditModal(booking) {
+            document.getElementById('edit_id').value = booking.id;
+            document.getElementById('edit_name').value = booking.name;
+            document.getElementById('edit_email').value = booking.email;
+            document.getElementById('edit_phone').value = booking.phone;
+            document.getElementById('edit_room_type').value = booking.room_type;
+            document.getElementById('edit_check_in').value = booking.check_in;
+            document.getElementById('edit_check_out').value = booking.check_out;
+            document.getElementById('edit_time').value = booking.time;
+            document.getElementById('edit_guests').value = booking.guests;
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -172,7 +174,11 @@
                 time: document.getElementById('edit_time').value,
                 guests: parseInt(document.getElementById('edit_guests').value)
             };
-            const res = await fetch('/api/edit_booking', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+            const res = await fetch('/api/edit_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
             const result = await res.json();
             if (result.success) {
                 alert('Updated. New total: ₱' + result.new_total.toLocaleString());
@@ -183,42 +189,27 @@
 
         async function cancelBooking(id) {
             if (!confirm('Cancel #' + id + '?')) return;
-            const res = await fetch('/api/cancel_booking', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({booking_id:id}) });
+            const res = await fetch('/api/cancel_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({booking_id: id})
+            });
             const d = await res.json();
             if (d.success) { loadBookings(); loadStats(); } else alert(d.message);
         }
 
         async function markPaid(id) {
             if (!confirm('Mark #' + id + ' as fully paid?')) return;
-            const res = await fetch('/api/mark_paid', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({booking_id:id}) });
+            const res = await fetch('/api/mark_paid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({booking_id: id})
+            });
             const d = await res.json();
             if (d.success) { loadBookings(); loadStats(); } else alert(d.message);
         }
 
         loadStats(); loadBookings();
-
-        // Account dropdown loader
-        async function loadAccounts() {
-            const res = await fetch('/api/users');
-            const users = await res.json();
-            const list = document.getElementById('accountList');
-            if (!list) return;
-            list.innerHTML = '';
-            users.forEach(u => {
-                const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.href = '#';
-                a.textContent = `${u.name} (${u.email})`;
-                a.onclick = async (e) => {
-                    e.preventDefault();
-                    const resp = await fetch('/api/quick_login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:u.id}) });
-                    const data = await resp.json();
-                    if (data.success) window.location.href = data.redirect;
-                };
-                li.appendChild(a); list.appendChild(li);
-            });
-        }
-        loadAccounts();
     </script>
 </body>
 </html>

@@ -6,9 +6,9 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; padding: 2rem; text-align: center; }
-        #reader { width: 300px; margin: 2rem auto; border: 2px solid #C4A962; }
+        #reader { width: 300px; margin: 2rem auto; border: 2px solid #C4A962; border-radius: 8px; }
         .result { margin: 1rem; font-size: 1.2rem; }
-        button { background: #C4A962; color: white; border: none; padding: 0.8rem 2rem; font-size: 1rem; cursor: pointer; margin: 0.5rem; }
+        button { background: #C4A962; color: white; border: none; padding: 0.8rem 2rem; font-size: 1rem; cursor: pointer; margin: 0.5rem; border-radius: 4px; }
         button:disabled { background: #ccc; cursor: not-allowed; }
         #manualInput { padding: 0.8rem; width: 200px; }
     </style>
@@ -28,26 +28,18 @@
 
     <script>
         let scannedId = null;
-        const readerDiv = document.getElementById('reader');
-        const scanResult = document.getElementById('scanResult');
-        const timeInBtn = document.getElementById('timeInBtn');
-        const timeOutBtn = document.getElementById('timeOutBtn');
-        const manualResult = document.getElementById('manualResult');
-
-        // Start scanner
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
             { facingMode: "environment" },
             { fps: 10, qrbox: 250 },
             (decodedText) => {
-                // QR contains the booking ID
                 scannedId = parseInt(decodedText);
                 if (!isNaN(scannedId)) {
-                    scanResult.textContent = `Scanned Booking ID: ${scannedId}`;
-                    timeInBtn.disabled = false;
-                    timeOutBtn.disabled = false;
+                    document.getElementById('scanResult').textContent = `Scanned Booking ID: ${scannedId}`;
+                    document.getElementById('timeInBtn').disabled = false;
+                    document.getElementById('timeOutBtn').disabled = false;
                 } else {
-                    scanResult.textContent = 'Invalid QR code';
+                    document.getElementById('scanResult').textContent = 'Invalid QR code';
                 }
             },
             (error) => { /* ignore */ }
@@ -65,8 +57,8 @@
             alert(data.message);
         }
 
-        timeInBtn.onclick = () => recordTime('in');
-        timeOutBtn.onclick = () => recordTime('out');
+        document.getElementById('timeInBtn').onclick = () => recordTime('in');
+        document.getElementById('timeOutBtn').onclick = () => recordTime('out');
 
         async function manualLookup() {
             const id = document.getElementById('manualInput').value;
@@ -75,13 +67,13 @@
             const bookings = await res.json();
             const booking = bookings.find(b => b.id == id);
             if (booking) {
-                manualResult.innerHTML = `
+                document.getElementById('manualResult').innerHTML = `
                     <p>Booking #${booking.id} - ${booking.name}</p>
                     <button onclick="recordManual('in', ${booking.id})">Time‑In</button>
                     <button onclick="recordManual('out', ${booking.id})">Time‑Out</button>
                 `;
             } else {
-                manualResult.textContent = 'Booking not found.';
+                document.getElementById('manualResult').textContent = 'Booking not found.';
             }
         }
 

@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; padding: 2rem; }
-        .receipt-container { max-width: 800px; margin: 2rem auto; background: white; padding: 3rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .receipt-container { max-width: 800px; margin: 2rem auto; background: white; padding: 3rem; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: #1E1E1E; }
         .header p { color: #8B7355; font-size: 0.9rem; margin-top: 0.5rem; }
@@ -43,7 +43,6 @@
             {% endif %}
         </div>
 
-        <!-- QR Code for check-in/out – guaranteed to appear -->
         <div class="qr-section">
             <p style="margin-bottom:0.5rem; font-weight:500;">Present this QR at check‑in and check‑out</p>
             <img src="{{ url_for('booking_qr', booking_id=booking.id) }}" alt="QR Code" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">

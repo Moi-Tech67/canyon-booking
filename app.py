@@ -14,6 +14,7 @@ CORS(app)
 
 DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
 
+# You can change the prices here – they are in Philippine Pesos (₱)
 ROOM_TYPES = {
     'Deluxe Canyon View': {
         'price': 3500,
@@ -25,25 +26,25 @@ ROOM_TYPES = {
         'price': 5500,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
-        'amenities': ['2 Bedrooms', 'Pool Access', 'Private kitchen', 'Fireplace', 'Butler Service']
+        'amenities': ['2 Bedrooms', 'Pool Access', 'Private kitchen', 'free Wifi', 'Butler Service']
     },
     'Presidential Suite': {
         'price': 12000,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
-        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Private kitchen', 'Helicopter Pad Access']
+        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Private kitchen', 'free Wifi']
     },
     'Standard Room': {
         'price': 1500,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
-        'amenities': ['Queen Bed', 'Pool Access', 'Free WiFi', 'Private kitchen',]
+        'amenities': ['Queen Bed', 'Pool Access', 'Free WiFi', 'Private kitchen','free Wifi']
     },
     'Family Suite': {
         'price': 4500,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
-        'amenities': ['2 Bedrooms', 'Private Kitchen', 'Kids Area', 'Pool Access',]
+        'amenities': ['2 Bedrooms', 'Private Kitchen', 'Kids Area', 'Pool Access', 'free Wifi']
     }
 }
 
@@ -230,32 +231,6 @@ def rules():
         flash('Access denied.', 'error')
         return redirect(url_for('index'))
     return render_template('rules.html', user=session)
-
-# ------------------ Account switcher (demo) ------------------
-@app.route('/api/users')
-def get_users():
-    conn = get_db()
-    users = conn.execute("SELECT id, email, name, role FROM users ORDER BY name").fetchall()
-    conn.close()
-    return jsonify([dict(u) for u in users])
-
-@app.route('/api/quick_login', methods=['POST'])
-def quick_login():
-    data = request.json
-    user_id = data.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Missing user_id.'})
-    conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    conn.close()
-    if not user:
-        return jsonify({'success': False, 'message': 'User not found.'})
-    session.clear()
-    session['user_id'] = user['id']
-    session['email'] = user['email']
-    session['name'] = user['name']
-    session['role'] = user['role']
-    return jsonify({'success': True, 'redirect': url_for('index')})
 
 # ------------------ Authentication ------------------
 @app.route('/login', methods=['GET', 'POST'])

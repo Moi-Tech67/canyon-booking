@@ -2,82 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Confirmed | The Canyon</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-                        url('https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1920') center/cover no-repeat;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .confirmation-card {
-            background: white;
-            max-width: 550px;
-            padding: 60px 40px;
-            border-radius: 4px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            background: #C4A962;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            margin: 0 auto 30px;
-        }
-        h1 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 36px;
-            color: #1a1a1a;
-            margin-bottom: 20px;
-            font-weight: 400;
-            letter-spacing: 2px;
-        }
-        p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            font-size: 1rem;
-        }
-        .btn {
-            background: #C4A962;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            transition: background 0.3s ease;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .btn:hover {
-            background: #1a1a1a;
-        }
+        body { font-family: 'Montserrat', sans-serif; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1920') center/cover no-repeat; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .confirmation-card { background: white; max-width: 550px; padding: 60px 40px; border-radius: 8px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .success-icon { width: 80px; height: 80px; background: #C4A962; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 30px; }
+        h1 { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: #1a1a1a; margin-bottom: 20px; }
+        p { color: #666; line-height: 1.6; margin-bottom: 30px; }
+        .btn { background: #C4A962; color: white; border: none; padding: 15px 40px; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { background: #1a1a1a; }
     </style>
 </head>
 <body>
     <div class="confirmation-card">
         <div class="success-icon">✓</div>
         <h1>Booking Confirmed!</h1>
-        <p>Thank you for choosing The Canyon Hotels & Resorts.<br>
-        Please show the generated QR code to the front desk for time check-in and out.<br>
-        We look forward to welcoming you.</p>
+        <p>Thank you for choosing The Canyon Hotels & Resorts.<br>A confirmation email has been sent to your email address.<br>We look forward to welcoming you.</p>
         <a href="/" class="btn">Return to Homepage</a>
     </div>
 </body>
