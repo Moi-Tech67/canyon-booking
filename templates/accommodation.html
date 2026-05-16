@@ -7,15 +7,15 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
-        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 1000; }
-        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
-        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        nav { position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(26,26,26,0.95); }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
         .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: #C4A962; }
         section { padding: 8rem 2rem 4rem; max-width: 1300px; margin: 0 auto; }
-        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-bottom: 3rem; }
-        .room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
-        .room-card { background: white; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .section-title { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; font-weight: 300; letter-spacing: 0.2em; text-align: center; margin-bottom: 3rem; }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 4rem; }
+        .room-card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; }
         .room-card:hover { transform: translateY(-8px); }
         .room-card-image { height: 220px; background-size: cover; background-position: center; }
         .room-card-info { padding: 1.5rem; }
@@ -23,9 +23,14 @@
         .room-card-price { font-size: 1.2rem; font-weight: 500; color: #8B7355; margin-bottom: 0.8rem; }
         .room-card-desc { font-size: 0.9rem; color: #666; line-height: 1.5; margin-bottom: 1rem; }
         .room-card-amenities { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-        .room-card-amenities li { background: #F5F2EB; padding: 0.3rem 0.7rem; font-size: 0.7rem; color: #5A4A3A; }
-        .room-count { font-size: 0.85rem; color: #5A4A3A; margin-top: 0.5rem; font-weight: 500; }
-        footer { text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #E0DCD3; color: #9A9A9A; font-size: 0.8rem; }
+        .room-card-amenities li { background: #F5F2EB; padding: 0.3rem 0.7rem; font-size: 0.7rem; color: #5A4A3A; border-radius: 2px; }
+        .room-count { font-size: 0.9rem; color: #5A4A3A; margin-top: 0.5rem; font-weight: 500; }
+        .activities-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .activity-card { background: #fff; padding: 1.2rem; border-radius: 8px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .activity-card h4 { color: #C4A962; font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .activity-price { font-weight: 600; color: #8B7355; }
+        footer { background: #1A1A1A; color: #ccc; text-align: center; padding: 2rem; margin-top: 4rem; }
+        footer a { color: #C4A962; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -35,6 +40,8 @@
             <li><a href="/about">About</a></li>
             <li><a href="/accommodation" class="active">Rooms</a></li>
             <li><a href="/booking">Book</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/faq">FAQ</a></li>
             <li><a href="/contact">Contact</a></li>
             {% if user and user.email %}
                 {% if user.role == 'admin' %}
@@ -53,13 +60,20 @@
     <section>
         <h2 class="section-title">Our Accommodations</h2>
         <div class="room-grid" id="roomGrid"></div>
+
+        <h2 class="section-title">Beach Activities</h2>
+        <div class="activities-grid" id="activitiesGrid"></div>
     </section>
 
-    <footer>&copy; 2026 The Canyon Hotels & Resorts. All rights reserved.</footer>
+    <footer>
+        <p>The Canyon Hotels & Resorts | 123 Canyon Ridge Road, Sedona, AZ 86336</p>
+        <p><a href="/contact">Contact</a> | <a href="/faq">FAQ</a> | <a href="/rules">Rules</a></p>
+        <p>© 2026 The Canyon. All rights reserved.</p>
+    </footer>
 
     <script>
         const roomTypes = {{ room_types | tojson | safe }};
-        const inventory = {{ inventory | tojson | safe }};
+        const activities = {{ activities | tojson | safe }};
         const roomImages = [
             'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=600',
             'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -67,23 +81,51 @@
             'https://images.pexels.com/photos/271639/pexels-photo-271639.jpeg?auto=compress&cs=tinysrgb&w=600',
             'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=600'
         ];
-        const grid = document.getElementById('roomGrid');
-        let idx = 0;
-        for (const [type, details] of Object.entries(roomTypes)) {
-            const card = document.createElement('div');
-            card.className = 'room-card';
-            card.innerHTML = `
-                <div class="room-card-image" style="background-image: url('${roomImages[idx % roomImages.length]}')"></div>
-                <div class="room-card-info">
-                    <h3 class="room-card-name">${type}</h3>
-                    <div class="room-card-price">₱${details.price.toLocaleString()}<span style="font-size:0.8rem;">/night</span></div>
-                    <p class="room-card-desc">${details.description}</p>
-                    <ul class="room-card-amenities">${details.amenities.map(a => `<li>${a}</li>`).join('')}</ul>
-                    <div class="room-count">🛏️ ${inventory[type]} rooms available</div>
-                </div>`;
-            grid.appendChild(card);
-            idx++;
+
+        // Fetch live room counts
+        async function loadRoomCounts() {
+            const res = await fetch('/api/room_counts');
+            return await res.json();
         }
+
+        async function renderRooms() {
+            const counts = await loadRoomCounts();
+            const grid = document.getElementById('roomGrid');
+            let idx = 0;
+            for (const [type, details] of Object.entries(roomTypes)) {
+                const available = counts[type] !== undefined ? counts[type] : 0;
+                const card = document.createElement('div');
+                card.className = 'room-card';
+                card.innerHTML = `
+                    <div class="room-card-image" style="background-image: url('${roomImages[idx % roomImages.length]}')"></div>
+                    <div class="room-card-info">
+                        <h3 class="room-card-name">${type}</h3>
+                        <div class="room-card-price">₱${details.price.toLocaleString()}<span style="font-size:0.8rem;">/night</span></div>
+                        <p class="room-card-desc">${details.description}</p>
+                        <ul class="room-card-amenities">${details.amenities.map(a => `<li>${a}</li>`).join('')}</ul>
+                        <div class="room-count">🛏️ ${available} room${available !== 1 ? 's' : ''} available</div>
+                    </div>`;
+                grid.appendChild(card);
+                idx++;
+            }
+        }
+
+        // Render activities
+        (function renderActivities() {
+            const grid = document.getElementById('activitiesGrid');
+            for (const [name, price] of Object.entries(activities)) {
+                const card = document.createElement('div');
+                card.className = 'activity-card';
+                card.innerHTML = `
+                    <h4>${name}</h4>
+                    <p style="color:#666; font-size:0.9rem;">Experience the best of the coast.</p>
+                    <div class="activity-price">₱${price.toLocaleString()}</div>
+                `;
+                grid.appendChild(card);
+            }
+        })();
+
+        renderRooms();
     </script>
 </body>
 </html>

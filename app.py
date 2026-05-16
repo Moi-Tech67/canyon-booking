@@ -76,7 +76,6 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Users table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -85,14 +84,12 @@ def init_db():
         role TEXT NOT NULL CHECK(role IN ('admin','customer'))
     )''')
 
-    # Rooms table (individual rooms)
     c.execute('''CREATE TABLE IF NOT EXISTS rooms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         room_number TEXT UNIQUE NOT NULL,
         room_type TEXT NOT NULL
     )''')
 
-    # Pre‑populate rooms if empty
     c.execute("SELECT COUNT(*) FROM rooms")
     if c.fetchone()[0] == 0:
         for room_type, count in ROOM_INVENTORY.items():
@@ -102,7 +99,6 @@ def init_db():
                 c.execute("INSERT INTO rooms (room_number, room_type) VALUES (?, ?)",
                           (room_number, room_type))
 
-    # Bookings table – full schema
     c.execute('''CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -128,13 +124,12 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # ***** NEW: Add 'paid' column if it doesn't exist (safe migration) *****
+    # Add 'paid' column if missing
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN paid INTEGER DEFAULT 0")
     except:
         pass
 
-    # Pre‑create accounts if none exist
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
@@ -234,7 +229,7 @@ def faq():
 def rules():
     if session.get('role') != 'customer':
         flash('Access denied.', 'error')
-        return redirect(url_for('admin') if session.get('role') == 'admin' else url_for('index'))
+        return redirect(url_for('index'))
     return render_template('rules.html', user=session)
 
 # ------------------ Authentication ------------------
@@ -252,10 +247,7 @@ def login():
             session['name'] = user['name']
             session['role'] = user['role']
             flash('Logged in successfully.', 'success')
-            if user['role'] == 'admin':
-                return redirect(url_for('admin'))
-            else:
-                return redirect(url_for('booking_page'))
+            return redirect(url_for('index'))  # <-- Everyone lands on homepage
         else:
             flash('Invalid email or password.', 'error')
     return render_template('login.html')
@@ -294,13 +286,26 @@ def register():
             return render_template('register.html')
     return render_template('register.html')
 
+# ------------------ Room availability API (for Accommodation page) ------------------
+@app.route('/api/room_counts')
+def room_counts():
+    conn = get_db()
+    counts = {}
+    today = date.today().isoformat()
+    for room_type in ROOM_TYPES:
+        total = ROOM_INVENTORY[room_type]
+        used = conn.execute("SELECT COUNT(*) FROM bookings WHERE room_type=? AND status='active' AND check_out > ?", (room_type, today)).fetchone()[0]
+        counts[room_type] = max(0, total - used)
+    conn.close()
+    return jsonify(counts)
+
 # ------------------ Booking (customer) ------------------
 @app.route('/booking')
 @login_required
 def booking_page():
     if session.get('role') == 'admin':
         flash('Admins cannot book appointments.', 'error')
-        return redirect(url_for('admin'))
+        return redirect(url_for('index'))
     return render_template('booking.html', room_types=ROOM_TYPES, activities=ACTIVITIES, user=session)
 
 @app.route('/api/check_availability', methods=['POST'])
@@ -321,12 +326,10 @@ def check_availability():
     price_per_night = ROOM_TYPES[room_type]['price']
     total_room = price_per_night * nights
 
-    # Check if a free room exists
     available_room = assign_room(room_type, check_in, check_out)
     if not available_room:
         return jsonify({'available': False, 'message': 'No rooms available for the selected dates.'})
 
-    # Count available rooms for display
     conn = get_db()
     total_rooms = conn.execute("SELECT COUNT(*) FROM rooms WHERE room_type = ?", (room_type,)).fetchone()[0]
     used_rooms = conn.execute('''SELECT COUNT(*) FROM bookings
@@ -336,7 +339,6 @@ def check_availability():
     conn.close()
     available_count = max(0, total_rooms - used_rooms)
 
-    # Activities total
     activities_total = 0
     selected_activities = data.get('activities', [])
     for act in selected_activities:
@@ -370,7 +372,6 @@ def create_booking():
         nights = calculate_nights(check_in, check_out)
         price_room = ROOM_TYPES[room_type]['price'] * nights
 
-        # Assign a specific room
         room_number = assign_room(room_type, check_in, check_out)
         if not room_number:
             return jsonify({'success': False, 'message': 'No rooms available for the selected dates.'})
@@ -383,7 +384,6 @@ def create_booking():
 
         grand_total = price_room + activities_total
 
-        # Downpayment
         DEPOSIT_RATE = 0.30
         downpayment = round(grand_total * DEPOSIT_RATE, 2)
         balance = round(grand_total - downpayment, 2)
@@ -419,7 +419,7 @@ def create_booking():
 @login_required
 def my_bookings():
     if session.get('role') != 'customer':
-        return redirect(url_for('admin'))
+        return redirect(url_for('index'))
     conn = get_db()
     bookings = conn.execute(
         "SELECT * FROM bookings WHERE user_id=? ORDER BY booking_date DESC",
@@ -440,7 +440,7 @@ def receipt(booking_id):
         return redirect(url_for('my_bookings') if session['role'] == 'customer' else url_for('admin'))
     if session['role'] != 'admin' and booking['user_id'] != session['user_id']:
         flash('Unauthorized.', 'error')
-        return redirect(url_for('my_bookings') if session['role'] == 'customer' else url_for('admin'))
+        return redirect(url_for('index'))
     activities_list = [a.strip() for a in booking['activities'].split(',') if a.strip()]
     activities_details = {a: ACTIVITIES.get(a, 0) for a in activities_list}
     nights = calculate_nights(booking['check_in'], booking['check_out'])
