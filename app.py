@@ -16,34 +16,34 @@ DB_FILE = os.path.join('/tmp', 'canyon_bookings.db')
 
 ROOM_TYPES = {
     'Deluxe Canyon View': {
-        'price': 350,
+        'price': 3500,
         'capacity': 2,
-        'description': 'Spacious room with breathtaking canyon views, king-size bed, and private balcony.',
-        'amenities': ['King Bed', 'Private Balcony', 'Mini Bar', 'Free WiFi', 'Room Service']
+        'description': 'Spacious room with breathtaking canyon views, king-size bed, and private kitchen.',
+        'amenities': ['King Bed', 'Pool Access', 'Private kitchen', 'Free WiFi', 'Room Service']
     },
     'Premium Suite': {
-        'price': 550,
+        'price': 5500,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
-        'amenities': ['2 Bedrooms', 'Living Room', 'Jacuzzi', 'Fireplace', 'Butler Service']
+        'amenities': ['2 Bedrooms', 'Pool Access', 'Private kitchen', 'Fireplace', 'Butler Service']
     },
     'Presidential Suite': {
-        'price': 1200,
+        'price': 12000,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
-        'amenities': ['3 Bedrooms', 'Private Pool', 'Butler Service', 'Wine Cellar', 'Helicopter Pad Access']
+        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Private kitchen', 'Helicopter Pad Access']
     },
     'Standard Room': {
-        'price': 200,
+        'price': 1500,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
-        'amenities': ['Queen Bed', 'City View', 'Free WiFi', 'Coffee Maker', 'Safe Box']
+        'amenities': ['Queen Bed', 'Pool Access', 'Free WiFi', 'Private kitchen',]
     },
     'Family Suite': {
-        'price': 450,
+        'price': 4500,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
-        'amenities': ['2 Bedrooms', 'Kitchen', 'Kids Area', 'Game Console', 'Laundry']
+        'amenities': ['2 Bedrooms', 'Private Kitchen', 'Kids Area', 'Pool Access',]
     }
 }
 
@@ -64,12 +64,12 @@ ROOM_PREFIX = {
 }
 
 ACTIVITIES = {
-    'Snorkeling': 500,
-    'Kayaking': 400,
+    '30 minutes Snorkeling(with oxygen tank)': 500,
+    '30 minutes Kayaking': 400,
     'Sunset Cruise': 1200,
-    'Jet Ski': 1500,
-    'Beach Volleyball': 200,
-    'Paddleboarding': 600
+    '30 minutes Jet Ski': 1500,
+    '3 hours Beach Volleyball': 200,
+    '30 minutes Paddleboarding': 600
 }
 
 def init_db():
