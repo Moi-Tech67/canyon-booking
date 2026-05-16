@@ -26,25 +26,25 @@ ROOM_TYPES = {
         'price': 5500,
         'capacity': 4,
         'description': 'Luxurious suite with separate living area, jacuzzi, and panoramic canyon views.',
-        'amenities': ['2 Bedrooms', 'Pool Access', 'Private kitchen', 'free Wifi', 'Butler Service']
+        'amenities': ['2 Bedrooms', 'Pool Access', 'Private kitchen', 'Free Wifi', 'Butler Service']
     },
     'Presidential Suite': {
         'price': 12000,
         'capacity': 6,
         'description': 'Ultimate luxury with three bedrooms, private pool, and personal butler service.',
-        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Private kitchen', 'free Wifi']
+        'amenities': ['3 Bedrooms', 'Pool Access', 'Butler Service', 'Private kitchen', 'Free Wifi', 'Helicopter Pod Access']
     },
     'Standard Room': {
         'price': 1500,
         'capacity': 2,
         'description': 'Comfortable room with modern amenities and city views.',
-        'amenities': ['Queen Bed', 'Pool Access', 'Free WiFi', 'Private kitchen','free Wifi']
+        'amenities': ['1 Queen Bed', 'Pool Access', 'Free WiFi', 'Private kitchen','Free Wifi']
     },
     'Family Suite': {
         'price': 4500,
         'capacity': 5,
         'description': 'Perfect for families with two bedrooms and kid-friendly amenities.',
-        'amenities': ['2 Bedrooms', 'Private Kitchen', 'Kids Area', 'Pool Access', 'free Wifi']
+        'amenities': ['2 Bedrooms', 'Private Kitchen', 'Kids Playground', 'Pool Access', 'Free Wifi']
     }
 }
 
