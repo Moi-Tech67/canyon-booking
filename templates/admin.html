@@ -7,27 +7,35 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; margin: 2rem; background: #F5F2EB; color: #1E1E1E; }
-        nav { background: rgba(26,26,26,0.95); padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 900; }
-        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
-        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        nav { position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(26,26,26,0.95); }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: color 0.3s; }
         .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+
+        .account-dropdown { position: relative; }
+        .dropdown-btn { background: none; border: none; color: #fff; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; cursor: pointer; padding: 0; }
+        .dropdown-btn:hover { color: #C4A962; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: rgba(26,26,26,0.95); border-radius: 4px; min-width: 200px; padding: 0.5rem 0; list-style: none; z-index: 1001; }
+        .account-dropdown:hover .dropdown-menu { display: block; }
+        .dropdown-menu li a { display: block; padding: 0.5rem 1.5rem; color: #fff; font-size: 0.8rem; text-transform: none; letter-spacing: 0.05em; text-decoration: none; white-space: nowrap; }
+        .dropdown-menu li a:hover { background: #C4A962; color: #1A1A1A; }
+
         h1 { margin-top: 5rem; font-size: 2rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; }
         .stats { display: flex; gap: 1.5rem; margin: 2rem 0; flex-wrap: wrap; }
-        .stat-box { background: white; padding: 1.2rem; text-align: center; flex: 1; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-box { background: white; padding: 1.2rem; text-align: center; flex: 1; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
         .stat-box h3 { font-size: 2rem; color: #8B7355; margin-bottom: 0.3rem; }
         .stat-box p { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #5A4A3A; }
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 3rem; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 3rem; }
         th, td { padding: 0.75rem; border: 1px solid #E0DCD3; font-size: 0.85rem; }
         th { background: #C4A962; color: white; text-transform: uppercase; letter-spacing: 0.1em; }
         .actions button { padding: 0.3rem 0.8rem; border: none; cursor: pointer; font-size: 0.7rem; border-radius: 3px; margin-right: 4px; }
         .edit-btn { background: #8B7355; color: white; }
         .cancel-btn { background: #C4A962; color: white; }
-        .edit-btn:disabled, .cancel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .paid-btn { background: #2E8B57; color: white; }
+        .edit-btn:disabled, .cancel-btn:disabled, .paid-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        #editModal form { background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px; }
-        #editModal label { display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 500; }
-        #editModal input, #editModal select { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; border: 1px solid #E0DCD3; font-family: inherit; }
+        #editModal form { background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 8px; }
         footer { text-align: center; padding: 2rem; font-size: 0.8rem; color: #9A9A9A; margin-top: 3rem; }
     </style>
 </head>
@@ -40,19 +48,28 @@
             <li><a href="/booking">Book</a></li>
             <li><a href="/contact">Contact</a></li>
             <li><a href="/scanner">QR Scanner</a></li>
-            <li><a href="/logout">Logout</a></li>
+            {% if user and user.email %}
+                <li class="account-dropdown">
+                    <button class="dropdown-btn">Logout ▾</button>
+                    <ul class="dropdown-menu" id="accountList"></ul>
+                </li>
+            {% else %}
+                <li class="account-dropdown">
+                    <a href="/login" class="dropdown-btn">Login ▾</a>
+                    <ul class="dropdown-menu" id="accountList"></ul>
+                </li>
+            {% endif %}
         </ul>
     </nav>
 
     <h1>Admin Dashboard</h1>
-
     <div class="stats">
-        <div class="stat-box"><h3 id="statTotal">0</h3><p>Total Bookings</p></div>
+        <div class="stat-box"><h3 id="statTotal">0</h3><p>Total</p></div>
         <div class="stat-box"><h3 id="statActive">0</h3><p>Active</p></div>
         <div class="stat-box"><h3 id="statCancelled">0</h3><p>Cancelled</p></div>
         <div class="stat-box"><h3 id="statRevenue">₱0</h3><p>Revenue</p></div>
-        <div class="stat-box"><h3 id="statActRevenue">₱0</h3><p>Activities Revenue</p></div>
-        <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg / Active</p></div>
+        <div class="stat-box"><h3 id="statActRevenue">₱0</h3><p>Activities</p></div>
+        <div class="stat-box"><h3 id="statAvg">₱0</h3><p>Avg</p></div>
     </div>
 
     <table>
@@ -60,7 +77,7 @@
             <tr>
                 <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th><th>Room No.</th>
                 <th>Check‑in</th><th>Check‑out</th><th>Time</th><th>Guests</th>
-                <th>Total</th><th>Deposit</th><th>Balance</th><th>Payment</th>
+                <th>Total</th><th>Deposit</th><th>Balance</th><th>Paid</th>
                 <th>Status</th><th>Time‑In</th><th>Time‑Out</th><th>Actions</th>
             </tr>
         </thead>
@@ -71,26 +88,19 @@
         <form id="editForm">
             <h3 style="margin-bottom:1rem;">Edit Booking</h3>
             <input type="hidden" id="edit_id">
-            <label>Name</label>
-            <input type="text" id="edit_name">
-            <label>Email</label>
-            <input type="email" id="edit_email">
-            <label>Phone</label>
-            <input type="tel" id="edit_phone">
+            <label>Name</label><input type="text" id="edit_name">
+            <label>Email</label><input type="email" id="edit_email">
+            <label>Phone</label><input type="tel" id="edit_phone">
             <label>Room Type</label>
             <select id="edit_room_type">
                 {% for room, details in room_types.items() %}
                 <option value="{{ room }}">{{ room }} (₱{{ details.price }}/night)</option>
                 {% endfor %}
             </select>
-            <label>Check‑in</label>
-            <input type="date" id="edit_check_in">
-            <label>Check‑out</label>
-            <input type="date" id="edit_check_out">
-            <label>Time</label>
-            <input type="time" id="edit_time">
-            <label>Guests</label>
-            <input type="number" id="edit_guests" min="1" max="10">
+            <label>Check‑in</label><input type="date" id="edit_check_in">
+            <label>Check‑out</label><input type="date" id="edit_check_out">
+            <label>Time</label><input type="time" id="edit_time">
+            <label>Guests</label><input type="number" id="edit_guests" min="1" max="10">
             <div style="text-align:right; margin-top:1rem;">
                 <button type="button" id="saveEditBtn" style="background:#C4A962; color:white; border:none; padding:0.5rem 1.5rem; cursor:pointer;">Save</button>
                 <button type="button" onclick="document.getElementById('editModal').style.display='none'" style="background:#ccc; border:none; padding:0.5rem 1.5rem; margin-left:0.5rem; cursor:pointer;">Cancel</button>
@@ -124,26 +134,28 @@
                     <td>${b.room_type}</td><td>${b.room_number || '-'}</td>
                     <td>${b.check_in}</td><td>${b.check_out}</td><td>${b.time}</td><td>${b.guests}</td>
                     <td>₱${b.total_price.toLocaleString()}</td><td>₱${b.downpayment.toLocaleString()}</td>
-                    <td>₱${b.balance.toLocaleString()}</td><td>${b.payment_method}</td>
+                    <td>₱${b.balance.toLocaleString()}</td>
+                    <td>${b.paid ? '✔️' : '❌'}</td>
                     <td>${b.status}</td><td>${b.time_in || '-'}</td><td>${b.time_out || '-'}</td>
                     <td class="actions">
                         <button class="edit-btn" onclick='openEditModal(${JSON.stringify(b)})' ${b.status==='cancelled'?'disabled':''}>Edit</button>
                         <button class="cancel-btn" onclick="cancelBooking(${b.id})" ${b.status==='cancelled'?'disabled':''}>Cancel</button>
+                        <button class="paid-btn" onclick="markPaid(${b.id})" ${(b.status!=='active' || b.paid)?'disabled':''}>Paid</button>
                     </td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        function openEditModal(booking) {
-            document.getElementById('edit_id').value = booking.id;
-            document.getElementById('edit_name').value = booking.name;
-            document.getElementById('edit_email').value = booking.email;
-            document.getElementById('edit_phone').value = booking.phone;
-            document.getElementById('edit_room_type').value = booking.room_type;
-            document.getElementById('edit_check_in').value = booking.check_in;
-            document.getElementById('edit_check_out').value = booking.check_out;
-            document.getElementById('edit_time').value = booking.time;
-            document.getElementById('edit_guests').value = booking.guests;
+        function openEditModal(b) {
+            document.getElementById('edit_id').value = b.id;
+            document.getElementById('edit_name').value = b.name;
+            document.getElementById('edit_email').value = b.email;
+            document.getElementById('edit_phone').value = b.phone;
+            document.getElementById('edit_room_type').value = b.room_type;
+            document.getElementById('edit_check_in').value = b.check_in;
+            document.getElementById('edit_check_out').value = b.check_out;
+            document.getElementById('edit_time').value = b.time;
+            document.getElementById('edit_guests').value = b.guests;
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -160,40 +172,53 @@
                 time: document.getElementById('edit_time').value,
                 guests: parseInt(document.getElementById('edit_guests').value)
             };
-            const res = await fetch('/api/edit_booking', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            const res = await fetch('/api/edit_booking', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
             const result = await res.json();
             if (result.success) {
-                alert('Booking updated. New total: ₱' + result.new_total.toLocaleString());
+                alert('Updated. New total: ₱' + result.new_total.toLocaleString());
                 document.getElementById('editModal').style.display = 'none';
-                loadBookings();
-                loadStats();
-            } else {
-                alert('Error: ' + result.message);
-            }
+                loadBookings(); loadStats();
+            } else alert('Error: ' + result.message);
         });
 
         async function cancelBooking(id) {
-            if (!confirm('Cancel booking #' + id + '?')) return;
-            const res = await fetch('/api/cancel_booking', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({booking_id: id})
-            });
-            const data = await res.json();
-            if (data.success) {
-                loadBookings();
-                loadStats();
-            } else {
-                alert('Error: ' + data.message);
-            }
+            if (!confirm('Cancel #' + id + '?')) return;
+            const res = await fetch('/api/cancel_booking', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({booking_id:id}) });
+            const d = await res.json();
+            if (d.success) { loadBookings(); loadStats(); } else alert(d.message);
         }
 
-        loadStats();
-        loadBookings();
+        async function markPaid(id) {
+            if (!confirm('Mark #' + id + ' as fully paid?')) return;
+            const res = await fetch('/api/mark_paid', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({booking_id:id}) });
+            const d = await res.json();
+            if (d.success) { loadBookings(); loadStats(); } else alert(d.message);
+        }
+
+        loadStats(); loadBookings();
+
+        // Account dropdown loader
+        async function loadAccounts() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const list = document.getElementById('accountList');
+            if (!list) return;
+            list.innerHTML = '';
+            users.forEach(u => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = '#';
+                a.textContent = `${u.name} (${u.email})`;
+                a.onclick = async (e) => {
+                    e.preventDefault();
+                    const resp = await fetch('/api/quick_login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:u.id}) });
+                    const data = await resp.json();
+                    if (data.success) window.location.href = data.redirect;
+                };
+                li.appendChild(a); list.appendChild(li);
+            });
+        }
+        loadAccounts();
     </script>
 </body>
 </html>

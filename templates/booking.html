@@ -8,10 +8,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Montserrat', sans-serif; background: #F5F2EB; color: #1E1E1E; }
         nav { position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem 3rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(26,26,26,0.95); }
-        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; }
-        .nav-links { display: flex; gap: 2rem; list-style: none; }
-        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; letter-spacing: 0.3em; color: #fff; text-decoration: none; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
+        .nav-links a { color: #fff; text-decoration: none; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: color 0.3s; }
         .nav-links a:hover, .nav-links a.active { color: #C4A962; }
+
+        .account-dropdown { position: relative; }
+        .dropdown-btn { background: none; border: none; color: #fff; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; cursor: pointer; padding: 0; }
+        .dropdown-btn:hover { color: #C4A962; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: rgba(26,26,26,0.95); border-radius: 4px; min-width: 200px; padding: 0.5rem 0; list-style: none; z-index: 1001; }
+        .account-dropdown:hover .dropdown-menu { display: block; }
+        .dropdown-menu li a { display: block; padding: 0.5rem 1.5rem; color: #fff; font-size: 0.8rem; text-transform: none; letter-spacing: 0.05em; text-decoration: none; white-space: nowrap; }
+        .dropdown-menu li a:hover { background: #C4A962; color: #1A1A1A; }
+
         section { padding: 8rem 2rem 4rem; max-width: 1200px; margin: 0 auto; }
         .booking-form { background: #fff; padding: 3rem; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.04); }
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 2rem; margin-bottom: 2rem; }
@@ -47,9 +56,357 @@
     </style>
 </head>
 <body>
-    <!-- Same navbar as accommodation, but with "Book" active -->
-    <nav> ... same navbar, link Book active ... </nav>
-    <section> ... form with payment modal ... </section>
-    <!-- The booking form and payment modal code is identical to the latest one you received earlier (with activities and GCash/Card). I'll not repeat the entire block to save space; you already have it. Use the same booking.html from my last message (the one with payment modal) – it's perfect. -->
+    <nav>
+        <a href="/" class="nav-logo">The Canyon</a>
+        <ul class="nav-links">
+            <li><a href="/about">About</a></li>
+            <li><a href="/accommodation">Rooms</a></li>
+            <li><a href="/booking" class="active">Book</a></li>
+            <li><a href="/gallery">Gallery</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/contact">Contact</a></li>
+            {% if user and user.email %}
+                {% if user.role == 'admin' %}
+                    <li><a href="/admin">Admin</a></li>
+                {% else %}
+                    <li><a href="/my-bookings">My Bookings</a></li>
+                    <li><a href="/rules">Rules</a></li>
+                {% endif %}
+                <li class="account-dropdown">
+                    <button class="dropdown-btn">Logout ▾</button>
+                    <ul class="dropdown-menu" id="accountList"></ul>
+                </li>
+            {% else %}
+                <li class="account-dropdown">
+                    <a href="/login" class="dropdown-btn">Login ▾</a>
+                    <ul class="dropdown-menu" id="accountList"></ul>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <section>
+        <h2 style="font-family:'Cormorant Garamond',serif; font-size:2.8rem; font-weight:300; letter-spacing:0.2em; text-align:center; margin-bottom:3rem;">Reservations</h2>
+        <div class="booking-form">
+            <form id="bookingForm">
+                <div class="form-grid">
+                    <div class="form-group"><label for="name">Full Name *</label><input type="text" id="name" required></div>
+                    <div class="form-group"><label for="email">Email Address *</label><input type="email" id="email" required></div>
+                    <div class="form-group"><label for="phone">Phone Number *</label><input type="tel" id="phone" required></div>
+                    <div class="form-group"><label for="guests">Guests *</label><input type="number" id="guests" min="1" max="10" value="2" required></div>
+                    <div class="form-group"><label for="roomType">Room Type *</label><select id="roomType" required><option value="">Select accommodation</option></select></div>
+                    <div class="form-group"><label for="checkIn">Check‑in Date *</label><input type="date" id="checkIn" required></div>
+                    <div class="form-group"><label for="checkOut">Check‑out Date *</label><input type="date" id="checkOut" required></div>
+                    <div class="form-group"><label for="time">Check‑in Time *</label><input type="time" id="time" value="15:00" required></div>
+                    <div class="form-group full-width"><label for="specialRequests">Special Requests (optional)</label><textarea id="specialRequests" rows="2"></textarea></div>
+                </div>
+
+                <div class="activities-section">
+                    <h3>Add Beach Activities (optional)</h3>
+                    <div id="activitiesList"></div>
+                </div>
+
+                <div class="price-display" id="priceDisplay">
+                    <div class="price-label" style="font-size:0.8rem; letter-spacing:0.2em; text-transform:uppercase; color:#5A4A3A;">Total Stay</div>
+                    <div class="price-amount" id="totalPrice">₱0</div>
+                    <div class="price-detail" style="font-size:0.8rem; color:#6B6258; margin-top:0.25rem;">
+                        <span id="nightsCount">0</span> nights · ₱<span id="pricePerNight">0</span>/night
+                        <span id="activitiesTotalSpan" style="display:none;"> + Activities: ₱<span id="activitiesTotal">0</span></span>
+                    </div>
+                    <div class="rooms-left" style="font-size:0.9rem; color:#2B5E2B; font-weight:500; margin-top:0.5rem;" id="roomsLeft"></div>
+                </div>
+
+                <div class="loading" id="loadingIndicator"><div class="spinner"></div><p style="margin-top:0.5rem; color:#8B7355;">Processing...</p></div>
+                <div class="message" id="message"></div>
+                <p style="font-size:0.8rem; color:#666; margin-top:1rem; text-align:center;">
+                    By booking you agree to our <a href="/rules" target="_blank" style="color:#8B7355;">Rules & Regulations</a>.
+                </p>
+                <button type="button" class="submit-btn" id="submitBtn">Proceed to Payment</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Payment Modal (same as before) -->
+    <div id="paymentModal">
+        <div class="modal-content">
+            <h3 style="font-family:'Cormorant Garamond',serif; font-size:2rem; margin-bottom:1rem;">Secure Payment</h3>
+            <p style="margin-bottom:1.2rem;">Total: <strong id="modalTotal">₱0</strong></p>
+            <p style="margin-bottom:0.5rem; font-size:0.9rem; color:#888;">Downpayment (30%): <strong id="modalDownpayment">₱0</strong></p>
+            <p style="margin-bottom:1.5rem; font-size:0.9rem; color:#888;">Balance due at check‑in: <strong id="modalBalance">₱0</strong></p>
+            <div class="payment-method">
+                <label class="active"><input type="radio" name="paymentMethod" value="card" checked> 💳 Card</label>
+                <label><input type="radio" name="paymentMethod" value="gcash"> 📱 GCash</label>
+            </div>
+            <div class="payment-details" id="cardDetails">
+                <input type="text" placeholder="Card Number" id="cardNumber" maxlength="19">
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" placeholder="MM/YY" id="expiry" style="width:50%;">
+                    <input type="text" placeholder="CVV" id="cvv" style="width:50%;">
+                </div>
+            </div>
+            <div class="payment-details" id="gcashDetails" style="display:none;">
+                <div class="gcash-qr" style="margin:1rem 0;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3596/3596145.png" alt="GCash QR" style="width:150px; height:150px;">
+                </div>
+                <input type="text" placeholder="GCash Reference Number">
+            </div>
+            <button class="modal-btn" id="payBtn">Pay Downpayment</button>
+            <button style="background: none; border: none; margin-top: 0.5rem; color: #888; cursor: pointer;" onclick="document.getElementById('paymentModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>The Canyon Hotels & Resorts | 123 Canyon Ridge Road, Sedona, AZ 86336</p>
+        <p><a href="/contact">Contact</a> | <a href="/faq">FAQ</a> | <a href="/rules">Rules</a></p>
+        <p>© 2026 The Canyon. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const roomTypes = {{ room_types | tojson | safe }};
+        const activities = {{ activities | tojson | safe }};
+
+        // Populate room dropdown
+        const roomSelect = document.getElementById('roomType');
+        for (const [type, details] of Object.entries(roomTypes)) {
+            const opt = document.createElement('option');
+            opt.value = type;
+            opt.textContent = `${type} — ₱${details.price.toLocaleString()}/night`;
+            roomSelect.appendChild(opt);
+        }
+
+        // Populate activities
+        const activitiesDiv = document.getElementById('activitiesList');
+        for (const [name, price] of Object.entries(activities)) {
+            const div = document.createElement('div');
+            div.className = 'activity-checkbox';
+            div.style.display = 'flex'; div.style.alignItems = 'center'; div.style.gap = '0.5rem'; div.style.marginBottom = '0.5rem';
+            div.innerHTML = `
+                <input type="checkbox" id="act_${name}" value="${name}" data-price="${price}">
+                <label for="act_${name}">${name} (₱${price.toLocaleString()})</label>
+            `;
+            activitiesDiv.appendChild(div);
+        }
+
+        (function setDefaultDates() {
+            const today = new Date();
+            const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+            const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate()+7);
+            document.getElementById('checkIn').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('checkOut').value = nextWeek.toISOString().split('T')[0];
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('checkIn').min = todayStr;
+            document.getElementById('checkOut').min = todayStr;
+        })();
+
+        ['checkIn','checkOut','roomType','guests','time'].forEach(id => {
+            document.getElementById(id).addEventListener('change', checkAvailability);
+        });
+        document.querySelectorAll('#activitiesList input[type=checkbox]').forEach(cb => {
+            cb.addEventListener('change', checkAvailability);
+        });
+
+        let currentGrandTotal = 0;
+        let currentDownpayment = 0;
+        let currentBalance = 0;
+
+        async function checkAvailability() {
+            const checkIn = document.getElementById('checkIn').value;
+            const checkOut = document.getElementById('checkOut').value;
+            const roomType = document.getElementById('roomType').value;
+            const guests = document.getElementById('guests').value;
+            const time = document.getElementById('time').value;
+            if (!checkIn || !checkOut || !roomType || !guests || !time) return;
+            if (new Date(checkOut) <= new Date(checkIn)) {
+                showMessage('Check‑out must be after check‑in', 'error');
+                hidePrice();
+                return;
+            }
+            const checkboxes = document.querySelectorAll('#activitiesList input[type=checkbox]:checked');
+            const selectedActivities = Array.from(checkboxes).map(cb => cb.value);
+
+            document.getElementById('loadingIndicator').classList.add('active');
+            hideMessage();
+            try {
+                const res = await fetch('/api/check_availability', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        check_in: checkIn,
+                        check_out: checkOut,
+                        room_type: roomType,
+                        guests: parseInt(guests),
+                        time,
+                        activities: selectedActivities
+                    })
+                });
+                const data = await res.json();
+                if (data.available) {
+                    currentGrandTotal = data.total_price;
+                    currentDownpayment = Math.round(currentGrandTotal * 0.30 * 100) / 100;
+                    currentBalance = Math.round((currentGrandTotal - currentDownpayment) * 100) / 100;
+                    displayPrice(data);
+                    hideMessage();
+                } else {
+                    showMessage(data.message || 'No availability', 'error');
+                    hidePrice();
+                }
+            } catch (e) {
+                showMessage('Error checking availability', 'error');
+                hidePrice();
+            } finally {
+                document.getElementById('loadingIndicator').classList.remove('active');
+            }
+        }
+
+        function displayPrice(data) {
+            document.getElementById('priceDisplay').style.display = 'block';
+            document.getElementById('totalPrice').textContent = '₱' + data.total_price.toLocaleString();
+            document.getElementById('nightsCount').textContent = data.nights;
+            document.getElementById('pricePerNight').textContent = data.price_per_night.toLocaleString();
+            document.getElementById('roomsLeft').textContent = `🛏️ ${data.rooms_left} room(s) left`;
+            const actSpan = document.getElementById('activitiesTotalSpan');
+            const actPrice = document.getElementById('activitiesTotal');
+            if (data.activities_total > 0) {
+                actSpan.style.display = 'inline';
+                actPrice.textContent = data.activities_total.toLocaleString();
+            } else {
+                actSpan.style.display = 'none';
+            }
+        }
+        function hidePrice() { document.getElementById('priceDisplay').style.display = 'none'; }
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+        }
+        function hideMessage() {
+            const msg = document.getElementById('message');
+            msg.className = 'message';
+            msg.textContent = '';
+        }
+
+        // Payment modal logic
+        const paymentModal = document.getElementById('paymentModal');
+        document.getElementById('submitBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!document.getElementById('name').value || !document.getElementById('email').value ||
+                !document.getElementById('phone').value || !document.getElementById('roomType').value) {
+                showMessage('Please fill all required fields.', 'error');
+                return;
+            }
+            if (currentGrandTotal <= 0) {
+                showMessage('Please check availability first.', 'error');
+                return;
+            }
+            document.getElementById('modalTotal').textContent = '₱' + currentGrandTotal.toLocaleString();
+            document.getElementById('modalDownpayment').textContent = '₱' + currentDownpayment.toLocaleString();
+            document.getElementById('modalBalance').textContent = '₱' + currentBalance.toLocaleString();
+            paymentModal.style.display = 'flex';
+        });
+
+        const cardRadio = document.querySelector('input[value="card"]');
+        const gcashRadio = document.querySelector('input[value="gcash"]');
+        const cardDetails = document.getElementById('cardDetails');
+        const gcashDetails = document.getElementById('gcashDetails');
+        const paymentLabels = document.querySelectorAll('.payment-method label');
+
+        cardRadio.addEventListener('change', () => {
+            cardDetails.style.display = 'block';
+            gcashDetails.style.display = 'none';
+            paymentLabels.forEach(l => l.classList.remove('active'));
+            cardRadio.parentElement.classList.add('active');
+        });
+        gcashRadio.addEventListener('change', () => {
+            cardDetails.style.display = 'none';
+            gcashDetails.style.display = 'block';
+            paymentLabels.forEach(l => l.classList.remove('active'));
+            gcashRadio.parentElement.classList.add('active');
+        });
+
+        document.getElementById('payBtn').addEventListener('click', async () => {
+            const checkIn = document.getElementById('checkIn').value;
+            const checkOut = document.getElementById('checkOut').value;
+            const submitBtn = document.getElementById('submitBtn');
+            paymentModal.style.display = 'none';
+            submitBtn.disabled = true;
+            document.getElementById('loadingIndicator').classList.add('active');
+            const checkboxes = document.querySelectorAll('#activitiesList input[type=checkbox]:checked');
+            const selectedActivities = Array.from(checkboxes).map(cb => cb.value);
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                room_type: document.getElementById('roomType').value,
+                check_in: checkIn,
+                check_out: checkOut,
+                time: document.getElementById('time').value,
+                guests: parseInt(document.getElementById('guests').value),
+                special_requests: document.getElementById('specialRequests').value,
+                activities: selectedActivities,
+                payment_method: paymentMethod
+            };
+            try {
+                const res = await fetch('/api/create_booking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(`Reservation confirmed! Booking #${data.booking_id}. Deposit: ₱${data.downpayment.toLocaleString()}`, 'success');
+                    document.getElementById('bookingForm').reset();
+                    (function resetDefaults() {
+                        const today = new Date();
+                        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+                        const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate()+7);
+                        document.getElementById('checkIn').value = tomorrow.toISOString().split('T')[0];
+                        document.getElementById('checkOut').value = nextWeek.toISOString().split('T')[0];
+                        document.getElementById('time').value = '15:00';
+                        document.querySelectorAll('#activitiesList input[type=checkbox]').forEach(cb => cb.checked = false);
+                    })();
+                    hidePrice();
+                    setTimeout(() => { window.location.href = '/booking-confirmation'; }, 2500);
+                } else {
+                    showMessage(data.message || 'Booking failed.', 'error');
+                }
+            } catch (e) {
+                showMessage('Error creating booking.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                document.getElementById('loadingIndicator').classList.remove('active');
+            }
+        });
+
+        // Account dropdown loader
+        async function loadAccounts() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const list = document.getElementById('accountList');
+            if (!list) return;
+            list.innerHTML = '';
+            users.forEach(u => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = '#';
+                a.textContent = `${u.name} (${u.email})`;
+                a.onclick = async (e) => {
+                    e.preventDefault();
+                    const resp = await fetch('/api/quick_login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: u.id })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    }
+                };
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+        }
+        loadAccounts();
+    </script>
 </body>
 </html>

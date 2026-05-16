@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import sqlite3
 import qrcode
 import io
@@ -124,7 +124,6 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
 
-    # Add 'paid' column if missing
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN paid INTEGER DEFAULT 0")
     except:
@@ -232,6 +231,32 @@ def rules():
         return redirect(url_for('index'))
     return render_template('rules.html', user=session)
 
+# ------------------ Account switcher (demo) ------------------
+@app.route('/api/users')
+def get_users():
+    conn = get_db()
+    users = conn.execute("SELECT id, email, name, role FROM users ORDER BY name").fetchall()
+    conn.close()
+    return jsonify([dict(u) for u in users])
+
+@app.route('/api/quick_login', methods=['POST'])
+def quick_login():
+    data = request.json
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Missing user_id.'})
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    conn.close()
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found.'})
+    session.clear()
+    session['user_id'] = user['id']
+    session['email'] = user['email']
+    session['name'] = user['name']
+    session['role'] = user['role']
+    return jsonify({'success': True, 'redirect': url_for('index')})
+
 # ------------------ Authentication ------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -247,7 +272,7 @@ def login():
             session['name'] = user['name']
             session['role'] = user['role']
             flash('Logged in successfully.', 'success')
-            return redirect(url_for('index'))  # <-- Everyone lands on homepage
+            return redirect(url_for('index'))
         else:
             flash('Invalid email or password.', 'error')
     return render_template('login.html')
@@ -286,7 +311,7 @@ def register():
             return render_template('register.html')
     return render_template('register.html')
 
-# ------------------ Room availability API (for Accommodation page) ------------------
+# ------------------ Room availability API ------------------
 @app.route('/api/room_counts')
 def room_counts():
     conn = get_db()
