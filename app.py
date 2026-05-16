@@ -135,11 +135,11 @@ def init_db():
         c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
                   ('admin@canyon.com', generate_password_hash('admin123'), 'Admin Canyon', 'admin'))
         customers = [
-            ('alice@example.com', 'alice123', 'Alice Johnson'),
-            ('bob@example.com', 'bob123', 'Bob Williams'),
-            ('carol@example.com', 'carol123', 'Carol Brown'),
-            ('dave@example.com', 'dave123', 'Dave Jones'),
-            ('eve@example.com', 'eve123', 'Eve Davis')
+            ('rosie@gmail.com', 'rosie123', 'Rosie Casabal'),
+            ('nelly@gmail.com', 'nelly123', 'Nelly Casabal'),
+            ('babyko@gmail.com', 'babyko123', 'Baby Ko'),
+            ('moi@gmail.com', 'moi123', 'Moi Abellera'),
+            ('ses@gmail.com', 'ses123', 'Ses Abellera')
         ]
         for email, pwd, name in customers:
             c.execute("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, 'customer')",
